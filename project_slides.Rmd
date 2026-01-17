@@ -1,17 +1,235 @@
 ---
 title: "Statistical Methods"
-author: "E. Dariol, E. Imbalzano, W. Pasieka, M. Severi"
-date: "`r Sys.Date()`"
-output:
-  ioslides_presentation: default
-  beamer_presentation: default
-  slidy_presentation: default
 subtitle: 'Final Project: Rent Modelling in Munich'
+author: "E. Dariol, E. Imbalzano, W. Pasieka, M. Severi"
+date: "22-01-2026"
+output:
+  beamer_presentation:
+    theme: "Rochester"
+    colortheme: "beaver"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(gamlss.data)
+data(rent99)
+rent99$rentsqm <- rent99$rent / rent99$area
 ```
+
+## Project Overview and Aim
+
+- Empirical analysis of residential rental prices in Munich
+- Response variable: monthly rent
+- Explanatory variables: structural and locational housing characteristics
+- Methodology: exploratory data analysis and regression modelling
+- Objective:
+  - quantify the impact of key housing attributes on rental prices
+  - build and compare regression models for rent prediction
+
+
+## Dataset Description
+
+- Dataset: Rent99
+- Study area: Munich
+- Reference year: 1999
+- Unit of observation: individual rental unit
+- Response variable: monthly rent
+- Monthly rent: mean 459, median 427, ranging from 41 to 1843
+- Dataset size: 3 082 observations × 9 variables
+
+
+## Variables Overview
+
+- Response variable:
+  - Monthly rent <!-- rent -->
+- Explanatory variables:
+  - Structural characteristics <!-- area, year of construction -->
+  - Locational characteristics <!-- location, district -->
+  - Quality and equipment indicators <!-- bath, kitchen, cheating -->
+- Variable types:
+  - Continuous variables
+  - Categorical variables
+
+
+## Data Preparation and Cleaning
+
+- Missing values:
+  - no missing values detected
+  - full dataset retained for analysis
+- Variable type verification:
+  - categorical variables treated as factors
+- Class imbalance:
+  - uneven distribution across some categorical variables
+  - no resampling applied due to regression setting
+
+
+## Exploratory Data Analysis: Rent Distribution
+
+- Central 50% of rents lies between 322 and 559 (IQR = 237)
+- Mean rent exceeds median, indicating right-skewness
+- Presence of high-value outliers
+- Log-transformation of the response variable is considered
+
+
+## Exploratory Data Analysis: Rent Distribution (Plots)
+
+```{r rent_distribution_plots, fig.width=9, fig.height=4}
+# Layout: 1 row, 2 columns
+par(mfrow = c(1, 2))
+
+# Compute mean and median
+rent_mean <- mean(rent99$rent)
+rent_median <- median(rent99$rent)
+
+# Histogram
+hist(rent99$rent,
+     main = "Distribution of Monthly Rent",
+     xlab = "Monthly Rent",
+     col = "lightgray",
+     border = "white")
+
+abline(v = rent_mean, col = "red", lwd = 2)
+abline(v = rent_median, col = "blue", lwd = 2)
+
+legend("topright",
+       legend = c(
+         paste("Mean =", round(rent_mean, 1)),
+         paste("Median =", round(rent_median, 1))
+       ),
+       col = c("red", "blue"),
+       lwd = 2,
+       bty = "n",
+       cex = 0.9)
+
+# Log-transform rent
+log_rent <- log(rent99$rent)
+
+# Compute mean and median
+log_mean <- mean(log_rent)
+log_median <- median(log_rent)
+
+# Histogram
+hist(log_rent,
+     main = "Distribution of log(Monthly Rent)",
+     xlab = "log(Monthly Rent)",
+     col = "lightgray",
+     border = "white")
+
+# Mean and median lines
+abline(v = log_mean, col = "red", lwd = 2)
+abline(v = log_median, col = "blue", lwd = 2)
+
+# Legend
+legend("topleft",
+       legend = c(
+         paste("Mean =", round(log_mean, 2)),
+         paste("Median =", round(log_median, 2))
+       ),
+       col = c("red", "blue"),
+       lwd = 2,
+       bty = "n",
+       cex = 0.9)
+
+# Reset layout (good practice)
+par(mfrow = c(1, 1))
+```
+
+
+## Exploratory Data Analysis: Rent vs Explanatory Variables
+
+- Strong positive relationship between rent and dwelling size (corr = 0.58)
+- Substantial heterogeneity in rental prices across locations categories
+- Rent per square meter highlights spatial price differences
+- Results support inclusion of structural and locational variables
+
+
+## Exploratory Data Analysis: Rent vs Area
+
+```{r rent_vs_area, fig.width=6, fig.height=5}
+plot(rent99$area, rent99$rent,
+     xlab = "Area (sqm)",
+     ylab = "Monthly Rent",
+     main = "Monthly Rent vs Dwelling Size",
+     pch = 16,
+     col = rgb(0, 0, 0, 0.4))
+
+# Add linear trend
+abline(lm(rent ~ area, data = rent99),
+       col = "red",
+       lwd = 2)
+```
+
+
+## Exploratory Data Analysis: Rent per sqm by Location
+
+```{r rentsqm_vs_district, fig.width=6, fig.height=5}
+boxplot(rentsqm ~ location, data = rent99,
+        xlab = "Location",
+        ylab = "Rent per sqm",
+        main = "Rent per sqm by Location",
+        col = "lightgray")
+```
+
+
+## Model Specification
+
+- Choice of linear regression model
+- Definition of response variable
+- Selection of explanatory variables
+- Motivation for model choice
+
+
+## Linear Regression Results
+
+- Estimated coefficients
+- Sign and magnitude of effects
+- Statistically significant variables
+- Overall model fit
+
+
+## Model Diagnostics
+
+- Residual analysis
+- Linearity assumption
+- Normality of residuals
+- Homoscedasticity
+
+
+## Alternative Model
+
+- Modified model specification
+- Possible transformation of rent
+- Differences from the baseline model
+
+
+## Model Comparison
+
+- Comparison criteria (R², AIC)
+- Performance evaluation
+- Preferred model
+
+
+## Results Interpretation
+
+- Most influential variables
+- Economic interpretation of coefficients
+- Practical implications
+
+
+## Conclusions
+
+- Summary of main findings
+- Key determinants of rental prices
+- Limitations of the analysis
+- Possible extensions
+
+
+## Thank You
+
+Thank you for your attention.
+
+
+
 
 ## Munich Rents 1999 \| Overview of the dataset
 
