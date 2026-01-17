@@ -1,0 +1,536 @@
+---
+title: "Statistical Methods"
+author: "E. Dariol, E. Imbalzano, W. Pasieka, M. Severi"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+  slidy_presentation: default
+subtitle: 'Final Project: Rent Modelling in Munich'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Munich Rents 1999 \| Overview of the dataset
+
+The `rent99` dataset contains data from a survey conducted in 1999 regarding apartment rents in Munich, Germany.
+
+-   **Source:** `gamlss.data` R package.
+-   **Sample Size:** 3,082 observations (apartments).
+-   **Variables:** 9 variables (Rent, Area, Location, Year of construction, etc.).
+-   **Goal:** Develop a statistical model to quantify the relationship between monthly rent and apartment characteristics.
+
+## Variables
+
+| Variable | Type | Description | Levels / Unit |
+|:-----------------|:-----------------|:-----------------|:-----------------|
+| **rent** | Numeric | Target Variable. The monthly net rent. | Currency (DM or Euro) |
+| **rentsqm** | Numeric | Monthly net rent per square meter. | `rent` / `area` |
+| **area** | Numeric | Living area of the apartment. | Square meters ($m^2$) |
+| **yearc** | Numeric | Year of construction. | Year (e.g., 1950, 1990) |
+| **location** | Factor | Quality of the location in Munich. | 1 = Average<br>2 = Good<br>3 = Top |
+
+## Variables (cont.)
+
+| Variable | Type | Description | Levels / Unit |
+|:-----------------|:-----------------|:-----------------|:-----------------|
+| **bath** | Factor | Quality of the bathroom facilities. | 0 = Standard<br>1 = Premium |
+| **kitchen** | Factor | Quality of the kitchen. | 0 = Standard<br>1 = Premium |
+| **cheating** | Factor | Central heating available. | 0 = No<br>1 = Yes |
+| **district** | Factor | The administrative district in Munich. | Categorical ID |
+
+```{r load_rent99, include=FALSE}
+# 1. Install the package
+#install.packages("gamlss.data", repos = "http://cran.us.r-project.org")
+
+# 2. Load the library
+library(gamlss.data)
+
+# 3. Load the specific dataset
+data(rent99)
+
+# 4. View the first few rows to verify
+head(rent99)
+
+str(rent99)
+```
+
+##  {.smaller}
+
+```{r summary_rent99}
+library(knitr)
+library(kableExtra)
+
+kbl(summary(rent99), caption = "Summary of Rent99") %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), 
+                font_size = 12,
+                full_width = TRUE)
+```
+
+-   Housing Stock: The data represents older properties, with construction years (yearc) ranging from 1918 to 1997 (Avg: 1956).
+
+-   Apartment Size: Units are generally small to medium-sized, averaging \~67 sqm (max 160 sqm).
+
+-   Standard vs. Premium: The vast majority of apartments fall into "standard" categories for kitchen and bath, with very few luxury outliers.
+
+-   Heating: Central heating (cheating) is the norm, present in \~90% of the listed properties.
+
+## Data Preparation: Removing Target Leakage
+
+**The Issue: Mathematical Dependency**
+The variable `rentsqm` is structurally defined as the target variable divided by area:
+$$\text{rentsqm} = \frac{\text{rent}}{\text{area}}$$
+
+**The Consequence:**
+Including this feature creates **Target Leakage**. It would artificially inflate goodness-of-fit metrics (leading to an unrealistic $R^2 \approx 1$), rendering the model useless for prediction.
+
+**Action:**
+We filter out this feature to ensure valid, non-circular results.
+
+```{r remove_rentsqm, echo=TRUE}
+rent99 <- subset(rent99, select = -rentsqm)
+```
+
+## 1. Target Variable: `rent`
+
+```{r rent_histogram, warning=FALSE, fig.width=5, fig.height=3}
+
+library(ggplot2)
+
+# 1. Calculate Mean and Median
+mean_rent <- mean(rent99$rent, na.rm = TRUE)
+median_rent <- median(rent99$rent, na.rm = TRUE)
+
+# 2. Histogram with Lines
+p1 <- ggplot(rent99, aes(x = rent)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  
+  # Add Mean Line (Red, Dashed)
+  geom_vline(aes(xintercept = mean_rent), color = "red", linetype = "dashed", size = 1) +
+  
+  # Add Median Line (Blue, Solid)
+  geom_vline(aes(xintercept = median_rent), color = "darkblue", linetype = "solid", size = 1) +
+  
+  # Add Labels/Text (Optional, to know which is which)
+  annotate("text", x = mean_rent + 200, y = 300, label = paste("Mean:", round(mean_rent, 1)), color = "red") +
+  annotate("text", x = median_rent - 200, y = 300, label = paste("Median:", round(median_rent, 1)), color = "darkblue") +
+  
+  theme_minimal() +
+  labs(title = "Distribution of Rent (Raw)", 
+       subtitle = "Red Dashed = Mean, Blue Solid = Median",
+       x = "Rent (DM)", 
+       y = "Count")
+
+plot(p1)
+```
+
+-   **Right-Skewed**: High-value outliers pull the mean above the median
+
+-   **Outliers**: Max value (1843) is \>4x the average
+
+-   **Action**: `log(rent)` transformation required to normalize residuals and stabilize variance
+
+## Target Variable (cont.): `log(rent)`
+
+```{r log_rent_histogram, warning=FALSE, fig.width=5, fig.height=3}
+library(ggplot2)
+
+log_rent <- log(rent99$rent)
+rent99 <- cbind(rent99, log_rent)
+
+# 1. Calculate Mean and Median of the Log-Transformed Rent
+# We use log(rent99$rent) directly in the calculation
+mean_log <- mean(log_rent, na.rm = TRUE)
+median_log <- median(log_rent, na.rm = TRUE)
+
+# 2. Histogram with Lines
+p2 <- ggplot(rent99, aes(x = log(rent))) +
+  geom_histogram(bins = 30, fill = "darkgreen", color = "white") +
+  
+  # Add Mean Line (Red, Dashed)
+  geom_vline(aes(xintercept = mean_log), color = "red", linetype = "dashed", size = 1) +
+  
+  # Add Median Line (Blue, Solid)
+  geom_vline(aes(xintercept = median_log), color = "darkblue", linetype = "solid", size = 1) +
+  
+  # Add Labels (Positions adjusted for the log scale)
+  # Note: I adjusted the 'x' positions slightly (+/- 0.2) so text doesn't overlap the lines
+  annotate("text", x = mean_log + 0.3, y = 300, label = paste("Mean:", round(mean_log, 2)), color = "red") +
+  annotate("text", x = median_log - 0.3, y = 300, label = paste("Median:", round(median_log, 2)), color = "darkblue") +
+  
+  theme_minimal() +
+  labs(title = "Distribution of Log(Rent)", 
+       subtitle = "Red Dashed = Mean, Blue Solid = Median",
+       x = "Log Rent", 
+       y = "Count")
+
+plot(p2)
+```
+
+-   **Symmetry**: Distribution is now bell-shaped (normal)
+
+-   **Alignment**: Mean $\approx$ Median; skewness eliminated
+
+-   **Impact**: Outliers compressed and variance stabilized
+
+## 2. Quantitative Predictors: `area`
+
+```{r area_histogram, warning=FALSE, fig.width=5, fig.height=3}
+    library(ggplot2)
+
+    # 1. Calculate Mean and Median
+    mean_area <- mean(rent99$area, na.rm = TRUE)
+    median_area <- median(rent99$area, na.rm = TRUE)
+
+    # 2. Histogram with Density, Mean, and Median
+    p_area_hist <- ggplot(rent99, aes(x = area)) +
+      # Histogram with density scaling
+      geom_histogram(aes(y = after_stat(density)), binwidth = 5, fill = "lightseagreen", color = "white") +
+      
+      # Add Mean Line (Red, Dashed)
+      geom_vline(aes(xintercept = mean_area), color = "red", linetype = "dashed", size = 1) +
+      
+      # Add Median Line (Blue, Solid)
+      geom_vline(aes(xintercept = median_area), color = "darkblue", linetype = "solid", size = 1) +
+      
+      # Add Labels
+      annotate("text", x = mean_area + 25, y = 0.015, label = paste("Mean:", round(mean_area, 1)), color = "red") +
+      annotate("text", x = median_area - 25, y = 0.015, label = paste("Median:", round(median_area, 1)), color = "darkblue") +
+      
+      theme_minimal() +
+      labs(title = "Distribution of Apartment Size", 
+           subtitle = "Red Dashed = Mean, Blue Solid = Median",
+           x = "Area (sqm)", 
+           y = "Density")
+
+    plot(p_area_hist)
+```
+
+-   Well-Behaved: Mean (67.4) $\approx$ Median (65)
+-   Stable: No extreme outliers
+-   Range: Covers 20–160 sqm; density concentrated at 51 sqm - 81 sqm (1st Qu - 3rd Qu)
+
+## Quantitative predictor `yearc`
+
+```{r yearc_histogram, warning=FALSE, fig.width=5, fig.height=3}
+    library(ggplot2)
+
+    # 1. Distribution of Construction Year (Histogram)
+    # This shows you the "boom" periods in construction (e.g., post-war)
+    plot_dist <- ggplot(rent99, aes(x = yearc)) +
+      geom_histogram(binwidth = 5, fill = "orange", color = "white") +
+      theme_minimal() +
+      labs(title = "Distribution of Construction Years", 
+           subtitle = " Peaks indicate construction booms (e.g., 1960s)",
+           x = "Year of Construction", 
+           y = "Count of Apartments")
+
+    plot(plot_dist)
+```
+
+-   Shape: Multimodal / Irregular distribution
+-   Peaks: Strong activity in the 1920s and 1960s
+-   Gap: Clear construction void during WWII (\~1940s)
+
+## log-Rent vs. Area
+
+```{r area_vs_logrent_scatter, warning=FALSE, message=FALSE, echo=FALSE, fig.width=5, fig.height=3}
+library(ggplot2)
+
+ggplot(rent99, aes(x = area, y = log_rent)) +
+  # Points with transparency to handle overlapping
+  geom_point(alpha = 0.3, color = "lightseagreen") +
+  
+  # Linear Regression Line (Red)
+  geom_smooth(method = "lm", color = "darkred", size = 1, se = FALSE) +
+  
+  # Loess Line (Blue, Dashed) - to compare
+  geom_smooth(method = "loess", color = "blue", linetype = "dashed", size = 1, se = FALSE) +
+  
+  theme_minimal() +
+  labs(title = "Log-Rent vs. Living Area",
+       subtitle = "Red = Linear Fit | Blue Dashed = Non-linear smooth",
+       x = "Area (sqm)", 
+       y = "log(Rent)")
+```
+
+- Linearity: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
+
+- Homoscedasticity: The spread of residuals is relatively constant across the size range
+
+- Decision: area can be modeled as a linear parametric term
+
+## log-Rent vs. Year of Construction
+
+```{r rent_vs_yearc, warning=FALSE, fig.width=5, fig.height=3}
+    # 2. Rent vs. Year of Construction (Scatter with Trend Line)
+    # The blue line helps you see if the relationship is linear or curved (U-shaped)
+    plot_trend <- ggplot(rent99, aes(x = yearc, y = log_rent)) +
+      geom_point(alpha = 0.4, color = "gray40") + # The dots
+      geom_smooth(method = "loess", formula = y ~ x, color = "blue", size = 1) + # The smooth trend line
+      theme_minimal() +
+      labs(title = "Trend: Rent Price vs. Year Built", 
+           subtitle = "Are newer buildings more expensive?",
+           x = "Year of Construction", 
+           y = "log-Rent (DM)")
+
+
+    plot(plot_trend)
+```
+
+-   Shape: U-shaped curve indicates "Vintage" and Modern premiums.
+
+-   Dip: Mid-century buildings command the lowest rents.
+
+-   Spread: High variance; age alone predicts poorly
+
+## 3. Categorical Variables
+
+```{r categorical_plots, warning=FALSE, echo=FALSE, fig.height=6, fig.width=8}
+# Set up a 2x2 grid
+par(mfrow = c(2, 2))
+
+# --- 1. Location ---
+loc_counts <- table(rent99$location)
+barplot(loc_counts, 
+        main = "Location", 
+        col = "steelblue", 
+        names.arg = c("Avg", "Good", "Top"),
+        # FIX: Multiply max height by 1.2 to give 20% extra headroom
+        ylim = c(0, max(loc_counts) * 1.2)) 
+text(x = 0.7 + (0:(length(loc_counts)-1))*1.2, 
+     y = loc_counts, 
+     labels = loc_counts, 
+     pos = 3)
+
+# --- 2. Bath ---
+bath_counts <- table(rent99$bath)
+barplot(bath_counts, 
+        main = "Bath Quality", 
+        col = "firebrick", 
+        names.arg = c("Standard", "Premium"),
+        # FIX: Multiply by 1.2
+        ylim = c(0, max(bath_counts) * 1.2))
+text(x = 0.7 + (0:(length(bath_counts)-1))*1.2, 
+     y = bath_counts, 
+     labels = bath_counts, 
+     pos = 3)
+
+# --- 3. Kitchen ---
+kit_counts <- table(rent99$kitchen)
+barplot(kit_counts, 
+        main = "Kitchen Quality", 
+        col = "forestgreen", 
+        names.arg = c("Standard", "Premium"),
+        # FIX: Multiply by 1.2
+        ylim = c(0, max(kit_counts) * 1.2))
+text(x = 0.7 + (0:(length(kit_counts)-1))*1.2, 
+     y = kit_counts, 
+     labels = kit_counts, 
+     pos = 3)
+
+# --- 4. Central Heating ---
+heat_counts <- table(rent99$cheating)
+barplot(heat_counts, 
+        main = "Central Heating", 
+        col = "orange", 
+        names.arg = c("No", "Yes"),
+        # FIX: Multiply by 1.2
+        ylim = c(0, max(heat_counts) * 1.2))
+text(x = 0.7 + (0:(length(heat_counts)-1))*1.2, 
+     y = heat_counts, 
+     labels = heat_counts, 
+     pos = 3)
+
+# Reset layout
+par(mfrow = c(1, 1))
+```
+
+## Categorical Predictors: Imbalance Warning!
+
+-   Uneven Distribution: Significant imbalance observed across all categorical variables.
+-   Location: "Top" location (Cat 3) is rare ($N=78$ vs. $1,794$ for Average).
+-   Amenities: Premium Kitchens and Baths represent \<6% of the data.
+-   Impact: Rare classes effectively shrink the sample size for those specific coefficients, leading to higher uncertainty (Standard Error)
+
+## Handling Imbalance: Methodological Choice
+
+-   Observation: While "Premium" classes are rare, they are not empty.
+-   Threshold: The absolute sample size for the smallest group ($N=78$) is sufficient for statistical inference (Central Limit Theorem).
+-   Decision: No resampling required. We proceed with the original data.
+-   Note: We accept that confidence intervals for "Top Location" and "Premium" amenities will naturally be wider
+
+## Categorical Predictors: Price Drivers {.smaller}
+
+```{r categorical_boxplots, warning=FALSE, message=FALSE, echo=FALSE, fig.width=6.5, fig.height=3.5}
+# Setup 1x3 grid
+par(mfrow = c(1, 3)) 
+
+# 1. Location
+boxplot(log_rent ~ location, data = rent99, 
+        main = "Location", 
+        col = c("#A6CEE3", "#1F78B4", "#B2DF8A"),
+        ylab = "log(rent)", xlab = "")
+grid()
+
+# 2. Heating
+boxplot(log_rent ~ cheating, data = rent99, 
+        main = "Central Heating", 
+        col = c("gray90", "orange"),
+        names = c("No", "Yes"), xlab = "")
+grid()
+
+# 3. Kitchen
+boxplot(log_rent ~ kitchen, data = rent99, 
+        main = "Kitchen", 
+        col = c("gray90", "forestgreen"),
+        names = c("Standard", "Premium"), xlab = "")
+grid()
+
+par(mfrow = c(1, 1))
+```
+
+- Location: Clear stepwise price increase; significant premium for "Top" zones
+
+- Heating: Strong differentiator; consistently drives higher median rents
+
+- Kitchen: Positive shift in price, though the effect size is smaller
+
+## 4. Feature Engineering: Handling `district`
+
+-   Data Type Error: Originally numeric, mathematically wrong for a location ID
+-   Action: converted to a factor before modeling
+
+```{r convert_district_factor, echo=TRUE}
+rent99$district <- as.factor(rent99$district)
+```
+
+-   High Cardinality Issue: 336 distinct sub-districts is too granular for n $\approx$ 3,000 observations
+-   Solution: Aggregate to 25 main administrative districts (Stadtbezirke) to ensure statistical stability
+
+## Aggregating `district` Variable
+
+```{r aggregate_districts, echo=TRUE}
+rent99$district_main <- as.factor(ifelse(
+  nchar(as.character(rent99$district)) == 3,
+  substr(as.character(rent99$district), 1, 1),
+  substr(as.character(rent99$district), 1, 2)
+))
+dist_counts <- table(rent99$district_main)
+dist_counts[1:13]
+dist_counts[14:25]
+```
+
+## Correlation Analysis | Numeric Predictors
+
+```{r correlation_matrix, warning=FALSE, message=FALSE, echo=FALSE, fig.width=3, fig.height=3, fig.align='center'}
+library(corrplot)
+
+# 1. Select numeric vars + location (treated as numeric ordinal)
+numeric_vars <- rent99[, c("log_rent", "area", "yearc")]
+numeric_vars$location <- as.numeric(rent99$location) 
+
+# 2. Calculate Correlation
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# 3. Plot
+corrplot(cor_matrix, method = "color", 
+         type = "upper", 
+         addCoef.col = "black", # Add numbers
+         tl.col = "black", 
+         diag = FALSE,
+         mar = c(0,0,1,0))
+```
+
+-   Primary Driver: `area` is the strongest predictor of `log_rent` (0.55), confirming size drives relative price
+
+## 
+
+-   Secondary Factors: `yearc` (0.18) and `location` (0.13) show weak linear links to `log_rent`, suggesting non-linear effects
+
+-   Feature Trade-off: The negative correlation between `area` and `yearc` (-0.23) indicates newer apartments tend to be smaller
+
+-   Model Safety: Predictor correlations are low (\< 0.3), confirming no multicollinearity.
+
+## 
+
+```{r pair_plot, warning=FALSE, message=FALSE, fig.width=5, fig.height=5}
+library(GGally)
+
+# Select the most important variables
+vars_to_plot <- rent99[, c("log_rent", "area", "yearc", "location", "kitchen", "bath", "cheating")]
+
+# Create the Pair Plot
+ggpairs(vars_to_plot, 
+        title = "Pairs Plot: Relationships between log-Rent and Predictors",
+        lower = list(continuous = wrap("points", alpha = 0.3, size=0.5)),
+        mapping = aes(color = location)) # Optional: Color by location
+```
+
+## Comments...
+
+## Why this specific dataset requires a GAM
+
+```{r gam_model, warning=FALSE, message=FALSE, echo=TRUE}
+library(mgcv)
+model1 <- gam(log_rent ~ area + yearc + location +
+              kitchen + cheating + bath + district_main,
+              family = gaussian(), data = rent99)
+summary(model1)
+```
+
+## 
+
+```{r gam_diagnostics, warning=FALSE, fig.width=8, fig.height=3}
+# Setup a 1x2 plotting area to check both continuous variables
+par(mfrow = c(1, 2)) 
+
+# --- Check AREA ---
+# 1. Plot Area vs Residuals
+plot(rent99$area, residuals(model1), 
+     col = "gray", pch = 20,
+     xlab = "Area (sqm)", ylab = "Residuals",
+     main = "Residuals vs Area")
+abline(h = 0, col = "red", lty = 2)
+# 2. Add a smoothing line (Loess) to help your eye see the trend
+lines(lowess(rent99$area, residuals(model1)), col = "blue", lwd = 2)
+
+# --- Check YEARC ---
+# 1. Plot Year vs Residuals
+plot(rent99$yearc, residuals(model1), 
+     col = "gray", pch = 20,
+     xlab = "Year Constructed", ylab = "Residuals",
+     main = "Residuals vs Year")
+abline(h = 0, col = "red", lty = 2)
+# 2. Add a smoothing line
+lines(lowess(rent99$yearc, residuals(model1)), col = "blue", lwd = 2)
+
+# Reset plotting area
+par(mfrow = c(1, 1))
+```
+
+## 
+
+```{r gam_model_simple, echo=TRUE}
+model_simple <- gam(log_rent ~ area + s(yearc) + location + kitchen + cheating, family = gaussian(), data = rent99)
+
+summary(model_simple)
+```
+
+## 
+
+```{r gam_model_interaction, echo=TRUE}
+model2 <- gam(log_rent ~ yearc*district_main + area, family = gaussian(), data = rent99)
+
+summary(model2)
+```
+
+## 
+
+```{r gam_model_final, echo=TRUE}
+model3 <- gam(log_rent ~ s(yearc) + area + location , family = gaussian(), data = rent99)
+
+summary(model3)
+```
