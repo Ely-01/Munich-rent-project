@@ -1,12 +1,13 @@
 ---
 title: "Statistical Methods"
-subtitle: 'Final Project: Rent Modelling in Munich'
 author: "E. Dariol, E. Imbalzano, W. Pasieka, M. Severi"
 date: "22-01-2026"
 output:
+  ioslides_presentation: default
   beamer_presentation:
-    theme: "Rochester"
-    colortheme: "beaver"
+    theme: Rochester
+    colortheme: beaver
+subtitle: 'Final Project: Rent Modelling in Munich'
 ---
 
 ```{r setup, include=FALSE}
@@ -566,12 +567,23 @@ text(x = 0.7 + (0:(length(heat_counts)-1))*1.2,
 par(mfrow = c(1, 1))
 ```
 
+
+
 ## Categorical Predictors: Imbalance Warning!
 
 -   Uneven Distribution: Significant imbalance observed across all categorical variables.
 -   Location: "Top" location (Cat 3) is rare ($N=78$ vs. $1,794$ for Average).
 -   Amenities: Premium Kitchens and Baths represent \<6% of the data.
 -   Impact: Rare classes effectively shrink the sample size for those specific coefficients, leading to higher uncertainty (Standard Error)
+
+## Imbalance ratio IR
+
+-  Location: IR = 1794 / 78 $\approx$ 23
+-  Bath: IR = 2891 / 191 $\approx$ 15
+-  Kitchen: IR = 2951 / 131 $\approx$ 23
+-  Heating: IR = 2761 / 321 $\approx$ 9
+
+None of there ratios its extreme, meaning that the dataset is not severely imbalanced.
 
 ## Handling Imbalance: Methodological Choice
 
@@ -616,6 +628,11 @@ par(mfrow = c(1, 1))
 
 - Kitchen: Positive shift in price, though the effect size is smaller
 
+
+
+
+
+
 ## 4. Feature Engineering: Handling `district`
 
 -   Data Type Error: Originally numeric, mathematically wrong for a location ID
@@ -640,6 +657,53 @@ dist_counts <- table(rent99$district_main)
 dist_counts[1:13]
 dist_counts[14:25]
 ```
+
+
+
+## Checking sample size per new `district_main`
+
+```{r, warning=FALSE, fig.height=3.7}
+# Barplot of observations per aggregated district
+ggplot(rent99, aes(x = district_main)) +
+  geom_bar(fill = "steelblue", color = "white") +
+  
+  # Add count labels on top of bars
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5, size=3) +
+  
+  theme_minimal() +
+  labs(title = "Observations per Aggregated District",
+       subtitle = "Checking for adequate sample size in the 25 new zones",
+       x = "District ID (Aggregated)",
+       y = "Count")
+```
+
+Every new district has a good number of observation, ranging from 25 to 280
+
+
+## Boxplot of `log_rent` by `district_main` {.smaller}
+```{r, warning=FALSE, fig.height=3.8}
+# Boxplot of log_rent by aggregated district, ordered by median price
+ggplot(rent99, aes(x = reorder(district_main, log_rent, FUN = median), y = log_rent)) +
+  
+  # Boxplot
+  geom_boxplot(fill = "cadetblue", outlier.alpha = 0.2) +
+  
+  # Mean line
+  geom_hline(yintercept = mean(log(rent99$rent)), color = "red", linetype = "dashed") +
+  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, size = 9)) + 
+  
+  labs(title = "Log-Rent by Aggregated District",
+       subtitle = "Sorted by Median Price of Each District",
+       x = "District ID",
+       y = "log(Rent)")
+
+```
+
+-   The sorted boxplot validates the aggregation into 25 districts, revealing a price hierarchy from affordable to premium areas. 
+-   The significant variation in medians compared to the global average confirms that district_main could be a good predictor, while the consistent spread across groups indicates stable variance for the regression model
+
 
 ## Correlation Analysis | Numeric Predictors
 
