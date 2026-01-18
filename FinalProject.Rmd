@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Munich Rents 1999 (`rent99`)
 
-### Overview of the dataset  
+### Overview of the dataset 
 
 The rent99 dataset contains data from a survey conducted in 1999 regarding rents in the city of Munich, Germany. It is commonly used to analyze the relationship between rent prices and apartment characteristics (hedonic price modeling) to create a "Rent Mirror" (Mietspiegel), which serves as a reference for local rent regulations.
 
