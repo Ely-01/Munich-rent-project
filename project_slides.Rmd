@@ -18,7 +18,7 @@ rent99$rentsqm <- rent99$rent / rent99$area
 
 ## Project Overview and Aim
 
-- Empirical analysis of residential rental prices in Munich
+- Empirical analysis of residential rental prices in Munich 
 - Response variable: monthly rent
 - Explanatory variables: structural and locational housing characteristics
 - Methodology: exploratory data analysis and regression modelling
