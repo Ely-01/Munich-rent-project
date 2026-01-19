@@ -10,6 +10,23 @@ output:
 subtitle: 'Final Project: Rent Modelling in Munich'
 ---
 
+<style>
+
+/* 1. Force the slide to allow scrolling if content is too big */
+slides > slide {
+  overflow-y: auto !important;
+}
+
+/* 2. Force the Code Output box specifically to scroll */
+pre {
+  max-height: 400px !important; /* Limits height */
+  overflow-y: auto !important;  /* Adds scrollbar */
+  background-color: #f5f5f5;    /* Light gray background */
+}
+
+</style>
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(gamlss.data)
@@ -690,11 +707,10 @@ ggplot(rent99, aes(x = yearc, y = area)) +
 - Possible extensions
 
 
-
-
-
+## GAM baseline model {.smaller}
 
 ```{r gam_model, warning=FALSE, message=FALSE, echo=TRUE}
+
 library(mgcv)
 model1 <- gam(log_rent ~ area + yearc + location +
               kitchen + cheating + bath + district_main,
@@ -731,6 +747,7 @@ lines(lowess(rent99$yearc, residuals(model1)), col = "blue", lwd = 2)
 # Reset plotting area
 par(mfrow = c(1, 1))
 ```
+
 
 ## 
 
