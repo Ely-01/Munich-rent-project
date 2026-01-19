@@ -779,6 +779,90 @@ summary(model3)
 ```
 
 
+```{r, echo=TRUE}
+model_gamma <- gam(
+  rent ~ s(area) + s(yearc) + location + cheating + bath + kitchen,
+  family = Gamma(link = "log"),
+  data = rent99
+)
+summary(model_gamma)
+
+model_gamma$sp
+```
+
+
+```{r, echo=TRUE}
+model_gauss <- gam(
+  rent ~ s(area) + s(yearc) + location + bath + kitchen,
+  family = gaussian(link = "log"),
+  data = rent99
+)
+summary(model_gauss)
+```
+
+
+
+
+
+```{r, echo=TRUE}
+
+AIC(model_gamma, model_gauss, model1, model2, model3, model_simple)
+
+par(mfrow=c(2,2))
+gam.check(model_gauss)
+gam.check(model_gamma)
+gam.check(model1)
+```
+
+
+
+```{r, echo=TRUE}
+
+#par(mfrow = c(1, 2))
+## Deviance residuals
+res_gam_gamma <- residuals(model_gamma, type = "deviance")
+
+# Fitted values (scala risposta)
+fit_gam_gamma <- fitted(model_gamma)
+
+plot(fit_gam_gamma, res_gam_gamma,
+     xlab = "Fitted values (rent)",
+     ylab = "Deviance residuals",
+     main = "Gamma GAM: Residui vs Fitted")
+abline(h = 0, col = 2)
+
+#qqnorm(res_gam_gamma)
+#qqline(res_gam_gamma, col = 2)
+
+```
+
+
+
+```{r, echo=TRUE}
+
+#par(mfrow = c(1, 2))
+
+## Residui (Gaussian GAM)
+res_gam_gauss <- residuals(model_gauss, type = "deviance")
+
+## Fitted values (scala del link = log)
+fit_gam_gauss <- fitted(model_gauss)
+
+plot(fit_gam_gauss, res_gam_gauss,
+     xlab = "Fitted values (rent)",
+     ylab = "Deviance residuals",
+     main = "Gaussian GAM: Residui vs Fitted")
+abline(h = 0, col = 2)
+
+#qqnorm(res_gam_gauss)
+#qqline(res_gam_gauss, col = 2)
+
+
+```
+
+
+
+
 
 ## Thank You
 
