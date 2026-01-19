@@ -709,6 +709,9 @@ ggplot(rent99, aes(x = yearc, y = area)) +
 
 ## GAM baseline model {.smaller}
 
+We begin with a fully linear specification (using gam without smoothing functions) to establish a benchmark.
+This assumes that a 1-year increase in age has a constant percentage effect on rent, regardless of how old the building is.
+
 ```{r gam_model, warning=FALSE, message=FALSE, echo=TRUE}
 
 library(mgcv)
@@ -719,6 +722,8 @@ summary(model1)
 ```
 
 ## 
+
+We run this first to inspect the residuals. If the residuals show a pattern, we know the linear assumption is insufficient.
 
 ```{r gam_diagnostics, warning=FALSE, fig.width=8, fig.height=3}
 # Setup a 1x2 plotting area to check both continuous variables
