@@ -96,7 +96,7 @@ str(rent99)
 
 ##  {.smaller}
 
-```{r summary_rent99}
+```{r summary_rent99, warning=FALSE, message=FALSE, echo=FALSE}
 library(knitr)
 library(kableExtra)
 
@@ -141,9 +141,9 @@ We filter out this feature to ensure valid, non-circular results.
 rent99 <- subset(rent99, select = -rentsqm)
 ```
 
-## UNIVARIATE ANALYSIS
+# UNIVARIATE ANALYSIS | Numerical Variables
 
-## 1. Target Variable: `rent`
+## Target Variable: `rent`
 
 ```{r rent_histogram, warning=FALSE, fig.width=5, fig.height=3}
 library(ggplot2)
@@ -227,10 +227,9 @@ ggplot(rent99, aes(x = log(rent))) +
 -   **Symmetry**: Distribution is now bell-shaped (normal)
 -   **Alignment**: Mean $\approx$ Median; skewness eliminated
 -   **Impact**: Outliers compressed and variance stabilized
-$\implies$ we choose to preserve the `log(rent)` transformation for modeling
 
 
-## 2. Quantitative Predictors: `area`
+## Quantitative Predictors: `area`
 
 ```{r area_histogram, warning=FALSE, fig.width=5, fig.height=3}
 library(ggplot2)
@@ -292,15 +291,16 @@ ggplot(rent99, aes(x = area)) +
 -   Peaks: Strong activity in the 1920s and 1960s
 -   Gap: Clear construction void during WWII (\~1940s)
 
-## BIVARIATE ANALYSIS | numeric variables
+# BIVARIATE ANALYSIS | Numeric Variables
 
+## Rent vs. numerical variables
 
-## log-Rent vs. Area
-
-```{r area_vs_logrent_scatter, warning=FALSE, message=FALSE, echo=FALSE, fig.width=5, fig.height=3}
+```{r area_vs_rent_scatter, warning=FALSE, message=FALSE, echo=FALSE, fig.width=3.5, fig.height=3}
 library(ggplot2)
 
-ggplot(rent99, aes(x = area, y = log_rent)) +
+par(mfrow = c(1, 2))
+
+ggplot(rent99, aes(x = area, y = rent)) +
   # Points with transparency
   geom_point(alpha = 0.3, color = "lightseagreen") +
   
@@ -320,50 +320,42 @@ ggplot(rent99, aes(x = area, y = log_rent)) +
                                 "Loess Smooth" = "blue")) +
   
   theme_minimal() +
-  labs(title = "Log-Rent vs. Living Area",
+  labs(title = "Rent vs. Living Area",
        x = "Area (sqm)", 
-       y = "log(Rent)") +
+       y = "Rent") +
   
   # Legend position
   theme(legend.position = "top")
-```
 
-- Linearity: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
-
-- Homoscedasticity: The spread of residuals is relatively constant across the size range
-
-- Decision: area can be modeled as a linear parametric term
-
-
-## log-Rent vs. Year of Construction
-
-```{r rent_vs_yearc, warning=FALSE, fig.width=5, fig.height=3}
     # 2. Rent vs. Year of Construction (Scatter with Trend Line)
     # The blue line helps you see if the relationship is linear or curved (U-shaped)
-    plot_trend <- ggplot(rent99, aes(x = yearc, y = log_rent)) +
+    plot_trend <- ggplot(rent99, aes(x = yearc, y = rent)) +
       geom_point(alpha = 0.4, color = "gray40") + # The dots
       geom_smooth(method = "loess", formula = y ~ x, color = "blue", size = 1) + # The smooth trend line
       theme_minimal() +
       labs(title = "Trend: Rent Price vs. Year Built", 
            subtitle = "Are newer buildings more expensive?",
            x = "Year of Construction", 
-           y = "log-Rent (DM)")
+           y = "Rent")
 
 
     plot(plot_trend)
 ```
 
+
+- Linearity: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
+- Homoscedasticity: The spread of residuals is relatively constant across the size range
+- Decision: area can be modeled as a linear parametric term
+
 -   Shape: U-shaped curve indicates "Vintage" and Modern premiums.
-
 -   Dip: Mid-century buildings command the lowest rents.
-
 -   Spread: High variance; age alone predicts poorly
 
 
-## UNIVARIATE ANALYSIS | Categorical Variables
+# UNIVARIATE ANALYSIS | Categorical Variables
 
 
-## 3. Categorical Variables
+## Categorical Variables
 
 ```{r categorical_plots, warning=FALSE, echo=FALSE, fig.height=6, fig.width=8}
 # Set up a 2x2 grid
@@ -451,7 +443,7 @@ None of there ratios its extreme, meaning that the dataset is not severely imbal
 
 
 
-## 4. Feature Engineering: Handling `district`
+## Feature Engineering: Handling `district`
 
 -   Data Type Error: Originally numeric, mathematically wrong for a location ID
 -   Action: converted to a factor before modeling
@@ -500,7 +492,7 @@ ggplot(rent99, aes(x = district_main)) +
 Every new district has a good number of observation, ranging from 25 to 280
 
 
-## BIVARIATE ANALYSIS | Categorical Variables
+# BIVARIATE ANALYSIS | Categorical Variables
 
 ## Categorical Predictors: Price Drivers {.smaller}
 
@@ -509,28 +501,28 @@ Every new district has a good number of observation, ranging from 25 to 280
 par(mfrow = c(1, 4)) 
 
 # 1. Location
-boxplot(log_rent ~ location, data = rent99, 
+boxplot(rent ~ location, data = rent99, 
         main = "Location", 
         col = c("#A6CEE3", "#1F78B4", "#B2DF8A"),
         ylab = "log(rent)", xlab = "")
 grid()
 
 # 2. Heating
-boxplot(log_rent ~ cheating, data = rent99, 
+boxplot(rent ~ cheating, data = rent99, 
         main = "Central Heating", 
         col = c("gray90", "orange"),
         names = c("No", "Yes"), xlab = "")
 grid()
 
 # 3. Kitchen
-boxplot(log_rent ~ kitchen, data = rent99, 
+boxplot(rent ~ kitchen, data = rent99, 
         main = "Kitchen", 
         col = c("gray90", "forestgreen"),
         names = c("Standard", "Premium"), xlab = "")
 grid()
 
 # 4. Bath
-boxplot(log_rent ~ bath, data = rent99,
+boxplot(rent ~ bath, data = rent99,
         main = "Bath", 
         col = c("gray90", "firebrick"),
         names = c("Standard", "Premium"), xlab = "")
@@ -549,27 +541,26 @@ par(mfrow = c(1, 1))
 
 
 
-## Boxplot of `log_rent` by `district_main` {.smaller}
+## Boxplot of `rent` by `district_main` {.smaller}
 ```{r, warning=FALSE, fig.height=3.8}
 # Boxplot of log_rent by aggregated district, ordered by median price
-ggplot(rent99, aes(x = reorder(district_main, log_rent, FUN = median), y = log_rent)) +
+ggplot(rent99, aes(x = reorder(district_main, rent, FUN = median), y = rent)) +
   
   # Boxplot
   geom_boxplot(fill = "cadetblue", outlier.alpha = 0.2) +
   
   # Mean line
-  geom_hline(yintercept = mean(log(rent99$rent)), color = "red", linetype = "dashed") +
+  geom_hline(yintercept = mean(rent99$rent), color = "red", linetype = "dashed") +
   
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0, size = 9)) + 
   
-  labs(title = "Log-Rent by Aggregated District",
+  labs(title = "Rent by Aggregated District",
        subtitle = "Sorted by Median Price of Each District",
        x = "District ID",
        y = "log(Rent)")
 
 ```
-
 
 -   The sorted boxplot validates the aggregation into 25 districts, revealing a price hierarchy from affordable to premium areas. 
 -   The significant variation in medians compared to the global average confirms that district_main could be a good predictor, while the consistent spread across groups indicates stable variance for the regression model
@@ -582,7 +573,7 @@ ggplot(rent99, aes(x = reorder(district_main, log_rent, FUN = median), y = log_r
 library(corrplot)
 
 # 1. Select numeric vars + location (treated as numeric ordinal)
-numeric_vars <- rent99[, c("log_rent", "area", "yearc")]
+numeric_vars <- rent99[, c("rent", "area", "yearc")]
 numeric_vars$location <- as.numeric(rent99$location) 
 
 # 2. Calculate Correlation
@@ -598,11 +589,11 @@ corrplot(cor_matrix, method = "color",
 ```
 
 
--   Primary Driver: `area` is the strongest predictor of `log_rent` (0.55), confirming size drives relative price
+-   Primary Driver: `area` is the strongest predictor of `rent` (0.58), confirming size drives relative price
 
 ## 
 
--   Secondary Factors: `yearc` (0.18) and `location` (0.13) show weak linear links to `log_rent`, suggesting non-linear effects
+-   Secondary Factors: `yearc` (0.17) and `location` (0.13) show weak linear links to `rent`, suggesting non-linear effects
 
 -   Feature Trade-off: The negative correlation between `area` and `yearc` (-0.23) indicates newer apartments tend to be smaller
 
@@ -649,64 +640,6 @@ ggplot(rent99, aes(x = yearc, y = area)) +
 - Interpretability: GAMs maintain interpretability by isolating effects of individual predictors.
 
 
-## Baseline model
-
-
-
-
-## Model Specification
-
-- Choice of linear regression model
-- Definition of response variable
-- Selection of explanatory variables
-- Motivation for model choice
-
-
-## Linear Regression Results
-
-- Estimated coefficients
-- Sign and magnitude of effects
-- Statistically significant variables
-- Overall model fit
-
-
-## Model Diagnostics
-
-- Residual analysis
-- Linearity assumption
-- Normality of residuals
-- Homoscedasticity
-
-
-## Alternative Model
-
-- Modified model specification
-- Possible transformation of rent
-- Differences from the baseline model
-
-
-## Model Comparison
-
-- Comparison criteria (R², AIC)
-- Performance evaluation
-- Preferred model
-
-
-## Results Interpretation
-
-- Most influential variables
-- Economic interpretation of coefficients
-- Practical implications
-
-
-## Conclusions
-
-- Summary of main findings
-- Key determinants of rental prices
-- Limitations of the analysis
-- Possible extensions
-
-
 ## GAM baseline model {.smaller}
 
 We begin with a fully linear specification (using gam without smoothing functions) to establish a benchmark.
@@ -715,11 +648,13 @@ This assumes that a 1-year increase in age has a constant percentage effect on r
 ```{r gam_model, warning=FALSE, message=FALSE, echo=TRUE}
 
 library(mgcv)
-model1 <- gam(log_rent ~ area + yearc + location +
+model1 <- gam(rent ~ area + yearc + location +
               kitchen + cheating + bath + district_main,
               family = gaussian(), data = rent99)
 summary(model1)
 ```
+
+Observing the p-values of the district variable, we can see that they are not significant, indicating that the variable does not contribute to the model. We can therefore consider removing it in future models.
 
 ## 
 
@@ -753,31 +688,99 @@ lines(lowess(rent99$yearc, residuals(model1)), col = "blue", lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
+We can see a slight pattern in the residuals for both area and yearc, indicating that the linear assumption may not be sufficient. We will therefore try to model these variables with smoothing functions in the next step.
 
 ## 
 
 ```{r gam_model_simple, echo=TRUE}
-model_simple <- gam(log_rent ~ area + s(yearc) + location + kitchen + cheating, family = gaussian(), data = rent99)
-
-summary(model_simple)
-```
-
-## 
-
-```{r gam_model_interaction, echo=TRUE}
-model2 <- gam(log_rent ~ yearc*district_main + area, family = gaussian(), data = rent99)
+model2 <- gam(rent ~ s(area) + s(yearc) + location + kitchen + cheating + bath, family = gaussian(), data = rent99)
 
 summary(model2)
+model2$sp
 ```
+Looking at the contribution of the smoothing functions, we can see that both area and yearc are highly significant ($p < 2e-16$), confirming that non-linear relationships are important for this model.The effective degrees of freedom (edf) for area is 7.63, which is substantially higher than 1. This indicates a highly non-linear and complex relationship between area and rent. 
+
+Similarly, yearc has an edf of 4.97, also confirming non-linearity, though slightly less complex than area. The low smoothing parameter for area ($\approx 0.06$) is consistent with this high edf, as it imposes very little penalty on the curve's complexity.
+
+##
+
+```{r res, warning=FALSE, fig.width=8, fig.height=3}
+# Setup a 1x2 plotting area to check both continuous variables
+par(mfrow = c(1, 2)) 
+
+# --- Check AREA ---
+# 1. Plot Area vs Residuals
+plot(rent99$area, residuals(model2), 
+     col = "gray", pch = 20,
+     xlab = "Area (sqm)", ylab = "Residuals",
+     main = "Residuals vs Area")
+abline(h = 0, col = "red", lty = 2)
+# 2. Add a smoothing line (Loess) to help your eye see the trend
+lines(lowess(rent99$area, residuals(model2)), col = "blue", lwd = 2)
+
+# --- Check YEARC ---
+# 1. Plot Year vs Residuals
+plot(rent99$yearc, residuals(model2), 
+     col = "gray", pch = 20,
+     xlab = "Year Constructed", ylab = "Residuals",
+     main = "Residuals vs Year")
+abline(h = 0, col = "red", lty = 2)
+# 2. Add a smoothing line
+lines(lowess(rent99$yearc, residuals(model2)), col = "blue", lwd = 2)
+
+# Reset plotting area
+par(mfrow = c(1, 1))
+```
+
+The residual plots show no clear patterns for either area or yearc, indicating that the smoothing functions have effectively captured the non-linear relationships. The residuals are randomly scattered around zero, suggesting that the model is well-specified for these predictors.
+
 
 ## 
 
 ```{r gam_model_final, echo=TRUE}
-model3 <- gam(log_rent ~ s(yearc) + area + location , family = gaussian(), data = rent99)
+model3 <- gam(rent ~ s(yearc) + s(area) + location + kitchen + cheating, family = gaussian(), data = rent99)
 
 summary(model3)
 ```
+## Comparing Model 2 vs Model 3
 
+Comparing Model 2 (with bath) against Model 3 (without), Model 2 performs better on every meaningful metric:
+- The variable is highly significant ($p = 2.07 \times 10^{-6}$), proving that bathrooms strongly influence rent prices.
+- Better Fit (AIC): Model 2 has a lower AIC (39,080 vs. 39,101). A drop of ~20 points is strong evidence that the model is better.
+- Lower Error (GCV): The prediction error score (GCV) is lower in Model 2 (18,801) compared to Model 3 (18,927).
+- Explained Variance: The Adjusted $R^2$ is higher in Model 2 (0.512), meaning it explains more of the data's variability.
+**Conclusion**: Removing bath makes the model significantly worse. It should be retained.
+
+
+## Gaussian Model with Log Link
+
+Previously, we observed that rent is right-skewed. To avoid the interpretability issues associated with log-transforming the response variable, we will instead model rent directly. By specifying a log link function within the Gaussian family, we can handle the skewness and enforce positive fitted values while preserving the original scale of the data.
+
+```{r, echo=TRUE}
+model_gauss <- gam(
+  rent ~ s(area) + s(yearc) + location + bath + kitchen + cheating ,
+  family = gaussian(link = "log"),
+  data = rent99
+)
+summary(model_gauss)
+```
+## Gaussian Model Diagnostics
+
+```{r, echo=TRUE}
+par(mfrow=c(2,2))
+gam.check(model_gauss)
+```
+
+While the normality checks appear reasonable, the Residuals vs. Linear Predictor plot reveals a critical violation of the Gaussian assumptions.
+- Normality: The Q-Q plot and histogram suggest that the residuals follow an approximate normal distribution, with only minor deviations in the tails.
+- Homoscedasticity: This plot displays a distinct "cone" shape.
+The spread of the residuals expands significantly as the predicted rent increase.
+This indicates that the variance is not constant but rather increases with the mean (heteroscedasticity).
+
+
+## Gamma Model
+
+Although the Gaussian model with a log link provides a reasonable fit, the Gamma family is theoretically superior for modeling rent. Unlike the Gaussian distribution, which assumes constant variance and allows for negative values, the Gamma distribution is naturally defined for positive, right-skewed data and accounts for heteroscedasticity: this aligns better with economic reality, as higher rents typically exhibit greater variability.
 
 ```{r, echo=TRUE}
 model_gamma <- gam(
@@ -789,82 +792,34 @@ summary(model_gamma)
 
 model_gamma$sp
 ```
-
-
-```{r, echo=TRUE}
-model_gauss <- gam(
-  rent ~ s(area) + s(yearc) + location + bath + kitchen,
-  family = gaussian(link = "log"),
-  data = rent99
-)
-summary(model_gauss)
-```
-
-
-
-
+## Gamma Model Diagnostics
 
 ```{r, echo=TRUE}
-
-AIC(model_gamma, model_gauss, model1, model2, model3, model_simple)
-
 par(mfrow=c(2,2))
-gam.check(model_gauss)
 gam.check(model_gamma)
-gam.check(model1)
 ```
 
 
+## Model Comparison: AIC
 
-```{r, echo=TRUE}
 
-#par(mfrow = c(1, 2))
-## Deviance residuals
-res_gam_gamma <- residuals(model_gamma, type = "deviance")
 
-# Fitted values (scala risposta)
-fit_gam_gamma <- fitted(model_gamma)
+```{r, echo=FALSE}
 
-plot(fit_gam_gamma, res_gam_gamma,
-     xlab = "Fitted values (rent)",
-     ylab = "Deviance residuals",
-     main = "Gamma GAM: Residui vs Fitted")
-abline(h = 0, col = 2)
+results <- AIC(model1, model2, model3, model_gauss, model_gamma)
 
-#qqnorm(res_gam_gamma)
-#qqline(res_gam_gamma, col = 2)
+results$BIC <- BIC(model1, model2, model3, model_gauss, model_gamma)$BIC
 
+
+results$Dev_Expl <- c(summary(model1)$dev.expl, summary(model2)$dev.expl, summary(model3)$dev.expl, 
+                      summary(model_gauss)$dev.expl, summary(model_gamma)$dev.expl)
+print(results)
 ```
 
+The Gamma model achieves the lowest AIC (38,501) and BIC (38,614), indicating the best fit among all considered models. Although its deviance explained (51.2%) is slightly lower than the Gaussian log-link model (53.1%), the substantial drop in information criteria confirms that the Gamma distribution is statistically more appropriate for modeling rent data, effectively capturing its positive skewness and heteroscedasticity.
+
+$\implies$ **`model_gamma` offers the best trade-off between complexity and fit while respecting the physical and economic nature of the data.**
 
 
-```{r, echo=TRUE}
-
-#par(mfrow = c(1, 2))
-
-## Residui (Gaussian GAM)
-res_gam_gauss <- residuals(model_gauss, type = "deviance")
-
-## Fitted values (scala del link = log)
-fit_gam_gauss <- fitted(model_gauss)
-
-plot(fit_gam_gauss, res_gam_gauss,
-     xlab = "Fitted values (rent)",
-     ylab = "Deviance residuals",
-     main = "Gaussian GAM: Residui vs Fitted")
-abline(h = 0, col = 2)
-
-#qqnorm(res_gam_gauss)
-#qqline(res_gam_gauss, col = 2)
-
-
-```
-
-
-
-
-
-## Thank You
-
-Thank you for your attention.
+# Thank you for your attention
 
