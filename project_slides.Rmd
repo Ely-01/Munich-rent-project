@@ -7,6 +7,7 @@ output:
   beamer_presentation:
     theme: Rochester
     colortheme: beaver
+  slidy_presentation: default
 subtitle: 'Final Project: Rent Modelling in Munich'
 ---
 
@@ -43,20 +44,10 @@ The `rent99` dataset contains data from a survey conducted in 1999 regarding apa
 -   **Sample Size:** 3,082 observations (apartments).
 -   **Variables:** 9 variables regarding structural and locational housing characteristics.
 -   **Goal:** Develop a statistical model to quantify the relationship between monthly rent and apartment characteristics.
+    -  Response variable: monthly rent (`rent`).
+    
 - **Methodology**: exploratory data analysis and regression modelling.
 
-
-## Variables Overview
-
-- Response variable:
-  - Monthly rent <!-- rent -->
-- Explanatory variables:
-  - Structural characteristics <!-- area, year of construction -->
-  - Locational characteristics <!-- location, district -->
-  - Quality and equipment indicators <!-- bath, kitchen, cheating -->
-- Variable types:
-  - Continuous variables
-  - Categorical variables
 
 
 ## Variables
@@ -106,13 +97,13 @@ kbl(summary(rent99), caption = "Summary of Rent99") %>%
                 full_width = TRUE)
 ```
 
--   Housing Stock: The data represents older properties, with construction years (yearc) ranging from 1918 to 1997 (Avg: 1956).
+-   **Housing Stock**: The data represents older properties, with construction years (yearc) ranging from 1918 to 1997 (Avg: 1956).
 
--   Apartment Size: Units are generally small to medium-sized, averaging \~67 sqm (max 160 sqm).
+-   **Apartment Size**: Units are generally small to medium-sized, averaging \~67 sqm (max 160 sqm).
 
--   Standard vs. Premium: The vast majority of apartments fall into "standard" categories for kitchen and bath, with very few luxury outliers.
+-   **Standard vs. Premium**: The vast majority of apartments fall into "standard" categories for kitchen and bath, with very few luxury outliers.
 
--   Heating: Central heating (cheating) is the norm, present in \~90% of the listed properties.
+-   **Heating**: Central heating (cheating) is the norm, present in \~90% of the listed properties.
 
 
 
@@ -127,14 +118,14 @@ kbl(summary(rent99), caption = "Summary of Rent99") %>%
 
 ## Preprocessing: Removing Target Leakage
 
-**The Issue: Mathematical Dependency**
+- **Issue**
 The variable `rentsqm` is structurally defined as the target variable divided by area:
 $$\text{rentsqm} = \frac{\text{rent}}{\text{area}}$$
 
-**The Consequence:**
+- **Consequence:**
 Including this feature creates **Target Leakage**. It would artificially inflate goodness-of-fit metrics (leading to an unrealistic $R^2 \approx 1$), rendering the model useless for prediction.
 
-**Action:**
+- **Action:**
 We filter out this feature to ensure valid, non-circular results.
 
 ```{r remove_rentsqm, echo=TRUE}
@@ -145,7 +136,7 @@ rent99 <- subset(rent99, select = -rentsqm)
 
 ## Target Variable: `rent`
 
-```{r rent_histogram, warning=FALSE, fig.width=5, fig.height=3}
+```{r rent_histogram, warning=FALSE, fig.width=5, fig.height=3, position='center'}
 library(ggplot2)
 
 # Calculate statistics
@@ -183,7 +174,7 @@ ggplot(rent99, aes(x = rent)) +
 
 -   **Outliers**: Max value (1843) is \>4x the average
 
--   **Action**: `log(rent)` transformation required to normalize residuals and stabilize variance
+-   **Action**: `log(rent)` transformation could be taken in consideration to normalize residuals and stabilize variance
 
 ## Target Variable (cont.): `log(rent)`
 
@@ -265,9 +256,9 @@ ggplot(rent99, aes(x = area)) +
   theme(legend.position = "top")
 ```
 
--   Well-Behaved: Mean (67.4) $\approx$ Median (65)
--   Stable: No extreme outliers
--   Range: Covers 20–160 sqm; density concentrated at 51 sqm - 81 sqm (1st Qu - 3rd Qu)
+-   **Well-Behaved**: Mean (67.4) $\approx$ Median (65)
+-   **Stable**: No extreme outliers
+-   **Range**: Covers 20–160 sqm; density concentrated at 51 sqm - 81 sqm (1st Qu - 3rd Qu)
 
 ## Quantitative predictor `yearc`
 
@@ -287,9 +278,9 @@ ggplot(rent99, aes(x = area)) +
     plot(plot_dist)
 ```
 
--   Shape: Multimodal / Irregular distribution
--   Peaks: Strong activity in the 1920s and 1960s
--   Gap: Clear construction void during WWII (\~1940s)
+-   **Shape**: Multimodal / Irregular distribution
+-   **Peaks**: Strong activity in the 1920s and 1960s
+-   **Gap**: Clear construction void during WWII (\~1940s)
 
 # BIVARIATE ANALYSIS | Numeric Variables
 
@@ -343,13 +334,13 @@ ggplot(rent99, aes(x = area, y = rent)) +
 ```
 
 
-- Linearity: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
-- Homoscedasticity: The spread of residuals is relatively constant across the size range
-- Decision: area can be modeled as a linear parametric term
+- **Linearity**: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
+- **Homoscedasticity**: The spread of residuals is relatively constant across the size range
+- **Decision**: area can be modeled as a linear parametric term
 
--   Shape: U-shaped curve indicates "Vintage" and Modern premiums.
--   Dip: Mid-century buildings command the lowest rents.
--   Spread: High variance; age alone predicts poorly
+-   **Shape**: U-shaped curve indicates "Vintage" and Modern premiums.
+-   **Dip**: Mid-century buildings command the lowest rents.
+-   **Spread**: High variance; age alone predicts poorly
 
 
 # UNIVARIATE ANALYSIS | Categorical Variables
@@ -421,39 +412,39 @@ par(mfrow = c(1, 1))
 
 ## Categorical Predictors: Imbalance Warning!
 
--   Uneven Distribution: Significant imbalance observed across all categorical variables.
--   Location: "Top" location (Cat 3) is rare ($N=78$ vs. $1,794$ for Average).
--   Amenities: Premium Kitchens and Baths represent \<6% of the data.
--   Impact: Rare classes effectively shrink the sample size for those specific coefficients, leading to higher uncertainty (Standard Error)
+-   **Uneven Distribution**: Significant imbalance observed across all categorical variables.
+-   **Location**: "Top" location (Cat 3) is rare ($N=78$ vs. $1,794$ for Average).
+-   **Amenities**: Premium Kitchens and Baths represent \<6% of the data.
+-   **Impact**: Rare classes effectively shrink the sample size for those specific coefficients, leading to higher uncertainty (Standard Error)
 
-## Imbalance ratio IR
--  Location: IR = 1794 / 78 $\approx$ 23
--  Bath: IR = 2891 / 191 $\approx$ 15
--  Kitchen: IR = 2951 / 131 $\approx$ 23
--  Heating: IR = 2761 / 321 $\approx$ 9
+## Imbalance ratio IR {.smaller}
+-  Location: $$IR = \frac{1794}{78} \approx23$$
+-  Bath: $$IR = {2891 \over 191} \approx 15$$
+-  Kitchen: $$ IR = {2951 \over 131} \approx 23 $$
+-  Heating: $$IR = {2761 \over 321} \approx 9 $$
 
 None of there ratios its extreme, meaning that the dataset is not severely imbalanced.
 
 ## Handling Imbalance: Methodological Choice
 
--   Observation: While "Premium" classes are rare, they are not empty.
--   Threshold: The absolute sample size for the smallest group ($N=78$) is sufficient for statistical inference (Central Limit Theorem).
--   Decision: No resampling required. We proceed with the original data.
--   Note: We accept that confidence intervals for "Top Location" and "Premium" amenities will naturally be wider
+-   **Observation**: While "Premium" classes are rare, they are not empty.
+-   **Threshold**: The absolute sample size for the smallest group ($N=78$) is sufficient for statistical inference (Central Limit Theorem).
+-   **Decision**: No resampling required. We proceed with the original data.
+-   **Note**: We accept that confidence intervals for "Top Location" and "Premium" amenities will naturally be wider
 
 
 
 ## Feature Engineering: Handling `district`
 
--   Data Type Error: Originally numeric, mathematically wrong for a location ID
--   Action: converted to a factor before modeling
+-   **Data Type Error**: Originally numeric, mathematically wrong for a location ID
+-   **Action**: converted to a factor before modeling
 
 ```{r convert_district_factor, echo=TRUE}
 rent99$district <- as.factor(rent99$district)
 ```
 
--   High Cardinality Issue: 336 distinct sub-districts is too granular for n $\approx$ 3,000 observations
--   Solution: Aggregate to 25 main administrative districts (Stadtbezirke) to ensure statistical stability
+-   **High Cardinality Issue**: 336 distinct sub-districts is too granular for n $\approx$ 3,000 observations
+-   **Solution**: Aggregate to 25 main administrative districts (Stadtbezirke) to ensure statistical stability
 
 ## Aggregating `district` Variable
 
@@ -531,13 +522,13 @@ par(mfrow = c(1, 1))
 ```
 
 
-- Location: Clear stepwise price increase; significant premium for "Top" zones
+- *Location*: Clear stepwise price increase; significant premium for "Top" zones
 
-- Heating: Strong differentiator; consistently drives higher median rents
+- *Heating*: Strong differentiator; consistently drives higher median rents
 
-- Kitchen: Positive shift in price, though the effect size is smaller
+- *Kitchen*: Positive shift in price, though the effect size is smaller
 
-- Bath: Similar positive effect as kitchen, but with more variability due to fewer premium units
+- *Bath*: Similar positive effect as kitchen, but with more variability due to fewer premium units
 
 
 
@@ -558,13 +549,13 @@ ggplot(rent99, aes(x = reorder(district_main, rent, FUN = median), y = rent)) +
   labs(title = "Rent by Aggregated District",
        subtitle = "Sorted by Median Price of Each District",
        x = "District ID",
-       y = "log(Rent)")
+       y = "Rent")
 
 ```
 
--   The sorted boxplot validates the aggregation into 25 districts, revealing a price hierarchy from affordable to premium areas. 
--   The significant variation in medians compared to the global average confirms that district_main could be a good predictor, while the consistent spread across groups indicates stable variance for the regression model
+- **Validation**: The sorted plot validates the aggregation strategy, revealing a clear price hierarchy from affordable to premium zones.
 
+- **Modeling**: Significant median variation confirms predictive power, while consistent spreads indicate stable variance for the regression.
 
 
 ## Correlation Analysis | Numeric Predictors
@@ -589,15 +580,12 @@ corrplot(cor_matrix, method = "color",
 ```
 
 
--   Primary Driver: `area` is the strongest predictor of `rent` (0.58), confirming size drives relative price
+-   `area` is the strongest predictor of `rent` (0.58), confirming size drives relative price
 
-## 
+-   `yearc` (0.17) and `location` (0.13) show weak linear links to `rent`, suggesting non-linear effects
 
--   Secondary Factors: `yearc` (0.17) and `location` (0.13) show weak linear links to `rent`, suggesting non-linear effects
-
--   Feature Trade-off: The negative correlation between `area` and `yearc` (-0.23) indicates newer apartments tend to be smaller
-
--   Model Safety: Predictor correlations are low (\< 0.3), confirming no multicollinearity.
+  -   The negative correlation between `area` and `yearc` (-0.23) indicates newer apartments tend to be smaller
+  - Predictor correlations are low (\< 0.3), confirming no multicollinearity.
 
 ## Area vs yearc {.smaller}
 
@@ -629,21 +617,24 @@ ggplot(rent99, aes(x = yearc, y = area)) +
   theme(legend.position = "top")
 ```
 
-- Negative Trend: Newer buildings tend to be smaller, confirming the negative correlation (-0.23)
-- Non-Linearity: The loess curve shows a more complex relationship, suggesting size reductions accelerated in recent decades
-- Modeling Implication: Consider potential interaction or non-linear terms when including both variables in the model
+- **Negative Trend**: Newer buildings tend to be smaller, confirming the negative correlation (-0.23)
+- **Non-Linearity**: The loess curve shows a more complex relationship, suggesting size reductions accelerated in recent decades
+- **Modeling Implication**: Consider potential interaction or non-linear terms when including both variables in the model
 
 
 ## Why this specific dataset requires a GAM
-- Non-Linear Relationships: EDA revealed U-shaped trends (e.g., yearc) that linear models cannot capture.
-- Flexibility: GAMs allow for smooth functions, adapting to complex patterns without overfitting.
-- Interpretability: GAMs maintain interpretability by isolating effects of individual predictors.
+- **Non-Linear Relationships**
+  - EDA revealed U-shaped trends (e.g., yearc) that linear models cannot capture.
+- **Flexibility**
+  - GAMs allow for smooth functions, adapting to complex patterns without overfitting.
+- **Interpretability**
+  - GAMs maintain interpretability by isolating effects of individual predictors.
 
 
 ## GAM baseline model {.smaller}
 
-We begin with a fully linear specification (using gam without smoothing functions) to establish a benchmark.
-This assumes that a 1-year increase in age has a constant percentage effect on rent, regardless of how old the building is.
+We begin with a **fully linear** specification (using gam without smoothing functions) to establish a *benchmark*.
+
 
 ```{r gam_model, warning=FALSE, message=FALSE, echo=TRUE}
 
@@ -654,11 +645,11 @@ model1 <- gam(rent ~ area + yearc + location +
 summary(model1)
 ```
 
-Observing the p-values of the district variable, we can see that they are not significant, indicating that the variable does not contribute to the model. We can therefore consider removing it in future models.
+Observing the **p-values** of the district variable, we can see that they are **not significant**, indicating that the variable does not contribute to the model. We can therefore consider *removing it* in future models.
 
-## 
+## Baseline Model Diagnostics {.smaller}
 
-We run this first to inspect the residuals. If the residuals show a pattern, we know the linear assumption is insufficient.
+If the residuals show a pattern, we know the linear assumption is insufficient.
 
 ```{r gam_diagnostics, warning=FALSE, fig.width=8, fig.height=3}
 # Setup a 1x2 plotting area to check both continuous variables
@@ -688,9 +679,11 @@ lines(lowess(rent99$yearc, residuals(model1)), col = "blue", lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
-We can see a slight pattern in the residuals for both area and yearc, indicating that the linear assumption may not be sufficient. We will therefore try to model these variables with smoothing functions in the next step.
+We can see a **slight pattern** in the residuals for both `area` and `yearc`, indicating that the linear assumption may not be sufficient. 
 
-## 
+$\implies$ model these variables with *smoothing functions* in the next steps.
+
+## GAM with Smoothing Functions {.smaller}
 
 ```{r gam_model_simple, echo=TRUE}
 model2 <- gam(rent ~ s(area) + s(yearc) + location + kitchen + cheating + bath, family = gaussian(), data = rent99)
@@ -698,11 +691,12 @@ model2 <- gam(rent ~ s(area) + s(yearc) + location + kitchen + cheating + bath, 
 summary(model2)
 model2$sp
 ```
-Looking at the contribution of the smoothing functions, we can see that both area and yearc are highly significant ($p < 2e-16$), confirming that non-linear relationships are important for this model.The effective degrees of freedom (edf) for area is 7.63, which is substantially higher than 1. This indicates a highly non-linear and complex relationship between area and rent. 
+- `area` and `yearc` are **highly significant** ($p < 2e-16$), confirming that non-linear relationships are important for this model.
+- The *edf* for `area` is 7.63, which is substantially higher than 1 $\to$  highly non-linear and complex relationship between `area` and `rent`. 
+- `yearc` has an edf of 4.97, also confirming non-linearity, though slightly less complex than area. 
+- The low smoothing parameter for `area` ($\approx 0.06$) is consistent with this high edf, as it imposes very little penalty on the curve's complexity.
 
-Similarly, yearc has an edf of 4.97, also confirming non-linearity, though slightly less complex than area. The low smoothing parameter for area ($\approx 0.06$) is consistent with this high edf, as it imposes very little penalty on the curve's complexity.
-
-##
+## Model 2 Diagnostics 
 
 ```{r res, warning=FALSE, fig.width=8, fig.height=3}
 # Setup a 1x2 plotting area to check both continuous variables
@@ -732,29 +726,39 @@ lines(lowess(rent99$yearc, residuals(model2)), col = "blue", lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
-The residual plots show no clear patterns for either area or yearc, indicating that the smoothing functions have effectively captured the non-linear relationships. The residuals are randomly scattered around zero, suggesting that the model is well-specified for these predictors.
+- The residual plots show **no clear patterns** for either `area` or `yearc`, indicating that the smoothing functions have effectively captured the non-linear relationships. 
+- The *residuals are randomly scattered around zero*, suggesting that the model is well-specified for these predictors.
 
 
-## 
+## GAM without `bath` {.smaller}
 
 ```{r gam_model_final, echo=TRUE}
 model3 <- gam(rent ~ s(yearc) + s(area) + location + kitchen + cheating, family = gaussian(), data = rent99)
 
 summary(model3)
 ```
+
 ## Comparing Model 2 vs Model 3
 
-Comparing Model 2 (with bath) against Model 3 (without), Model 2 performs better on every meaningful metric:
-- The variable is highly significant ($p = 2.07 \times 10^{-6}$), proving that bathrooms strongly influence rent prices.
-- Better Fit (AIC): Model 2 has a lower AIC (39,080 vs. 39,101). A drop of ~20 points is strong evidence that the model is better.
-- Lower Error (GCV): The prediction error score (GCV) is lower in Model 2 (18,801) compared to Model 3 (18,927).
-- Explained Variance: The Adjusted $R^2$ is higher in Model 2 (0.512), meaning it explains more of the data's variability.
-**Conclusion**: Removing bath makes the model significantly worse. It should be retained.
+Model 2 (with bath) against Model 3 (without) performs better on every meaningful metric:
+
+- The variable is **highly significant**($p = 2.07 \times 10^{-6}$), proving that bathrooms strongly influence rent prices.
+
+- Model 2 has a **lower AIC** (39,080 vs. 39,101). A drop of ~20 points is strong evidence that the model is better.
+
+- The prediction **error score** (GCV) is **lower** in Model 2 (18,801) compared to Model 3 (18,927).
+
+- The **Adjusted** $\mathbf R^2$ is **higher** in Model 2 (0.512), meaning it explains more of the data's variability.
+
+$\implies$ Removing bath makes the model significantly *worse*. It should be retained.
 
 
 ## Gaussian Model with Log Link
 
-Previously, we observed that rent is right-skewed. To avoid the interpretability issues associated with log-transforming the response variable, we will instead model rent directly. By specifying a log link function within the Gaussian family, we can handle the skewness and enforce positive fitted values while preserving the original scale of the data.
+Previously, we observed that **rent is right-skewed**.
+To avoid the interpretability issues associated with log-transforming the response variable, we will instead model rent directly. 
+
+By specifying a **log link function** within the Gaussian family, we can handle the skewness and enforce positive fitted values while preserving the original scale of the data.
 
 ```{r, echo=TRUE}
 model_gauss <- gam(
@@ -771,16 +775,17 @@ par(mfrow=c(2,2))
 gam.check(model_gauss)
 ```
 
-While the normality checks appear reasonable, the Residuals vs. Linear Predictor plot reveals a critical violation of the Gaussian assumptions.
-- Normality: The Q-Q plot and histogram suggest that the residuals follow an approximate normal distribution, with only minor deviations in the tails.
-- Homoscedasticity: This plot displays a distinct "cone" shape.
+- **Normality**: The Q-Q plot and histogram suggest that the residuals follow an approximate normal distribution, with only minor deviations in the tails.
+- **Homoscedasticity**: This plot displays a distinct "cone" shape.
 The spread of the residuals expands significantly as the predicted rent increase.
-This indicates that the variance is not constant but rather increases with the mean (heteroscedasticity).
+This indicates that the *variance is not constant* but rather increases with the mean (**critical violation of the Gaussian assumptions**).
 
 
 ## Gamma Model
 
-Although the Gaussian model with a log link provides a reasonable fit, the Gamma family is theoretically superior for modeling rent. Unlike the Gaussian distribution, which assumes constant variance and allows for negative values, the Gamma distribution is naturally defined for positive, right-skewed data and accounts for heteroscedasticity: this aligns better with economic reality, as higher rents typically exhibit greater variability.
+Although the Gaussian model with a log link provides a reasonable fit, the Gamma family is theoretically superior for modeling rent. 
+
+**Gamma distribution is naturally defined for positive, right-skewed data and accounts for heteroscedasticity**: this aligns better with economic reality, as higher rents typically exhibit greater variability.
 
 ```{r, echo=TRUE}
 model_gamma <- gam(
@@ -816,7 +821,8 @@ results$Dev_Expl <- c(summary(model1)$dev.expl, summary(model2)$dev.expl, summar
 print(results)
 ```
 
-The Gamma model achieves the lowest AIC (38,501) and BIC (38,614), indicating the best fit among all considered models. Although its deviance explained (51.2%) is slightly lower than the Gaussian log-link model (53.1%), the substantial drop in information criteria confirms that the Gamma distribution is statistically more appropriate for modeling rent data, effectively capturing its positive skewness and heteroscedasticity.
+- The Gamma model achieves the **lowest AIC** (38,501) and **BIC** (38,614), indicating the best fit among all considered models. 
+- Although its deviance explained (51.2%) is **slightly lower** than the Gaussian log-link model (53.1%), the substantial drop in information criteria confirms that the Gamma distribution is statistically more appropriate for modeling rent data, effectively capturing its positive skewness and heteroscedasticity.
 
 $\implies$ **`model_gamma` offers the best trade-off between complexity and fit while respecting the physical and economic nature of the data.**
 
