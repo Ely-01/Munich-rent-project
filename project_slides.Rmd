@@ -136,7 +136,7 @@ rent99 <- subset(rent99, select = -rentsqm)
 
 ## Target Variable: `rent`
 
-```{r rent_histogram, warning=FALSE, fig.width=5, fig.height=3, position='center'}
+```{r rent_histogram, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 library(ggplot2)
 
 # Calculate statistics
@@ -179,7 +179,7 @@ ggplot(rent99, aes(x = rent)) +
 ## Target Variable (cont.): `log(rent)`
 
 
-```{r log_rent_histogram, warning=FALSE, fig.width=5, fig.height=3}
+```{r log_rent_histogram, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 library(ggplot2)
 
 rent99$log_rent <- log(rent99$rent)
@@ -222,7 +222,7 @@ ggplot(rent99, aes(x = log(rent))) +
 
 ## Quantitative Predictors: `area`
 
-```{r area_histogram, warning=FALSE, fig.width=5, fig.height=3}
+```{r area_histogram, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 library(ggplot2)
 
 # 1. Calculate Mean and Median
@@ -262,7 +262,7 @@ ggplot(rent99, aes(x = area)) +
 
 ## Quantitative predictor `yearc`
 
-```{r yearc_histogram, warning=FALSE, fig.width=5, fig.height=3}
+```{r yearc_histogram, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
     library(ggplot2)
 
     # 1. Distribution of Construction Year (Histogram)
@@ -311,7 +311,7 @@ ggplot(rent99, aes(x = area, y = rent)) +
                                 "Loess Smooth" = "blue")) +
   
   theme_minimal() +
-  labs(title = "Rent vs. Living Area",
+  labs(title = "Rent Price vs. Living Area",
        x = "Area (sqm)", 
        y = "Rent") +
   
@@ -324,7 +324,7 @@ ggplot(rent99, aes(x = area, y = rent)) +
       geom_point(alpha = 0.4, color = "gray40") + # The dots
       geom_smooth(method = "loess", formula = y ~ x, color = "blue", size = 1) + # The smooth trend line
       theme_minimal() +
-      labs(title = "Trend: Rent Price vs. Year Built", 
+      labs(title = "Rent Price vs. Year Built", 
            subtitle = "Are newer buildings more expensive?",
            x = "Year of Construction", 
            y = "Rent")
@@ -333,10 +333,13 @@ ggplot(rent99, aes(x = area, y = rent)) +
     plot(plot_trend)
 ```
 
+RENT vs AREA
 
 - **Linearity**: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
 - **Homoscedasticity**: The spread of residuals is relatively constant across the size range
-- **Decision**: area can be modeled as a linear parametric term
+- **Decision**: `area` can be modeled as a linear parametric term
+
+RENT vs YEARC
 
 -   **Shape**: U-shaped curve indicates "Vintage" and Modern premiums.
 -   **Dip**: Mid-century buildings command the lowest rents.
@@ -418,7 +421,7 @@ par(mfrow = c(1, 1))
 -   **Impact**: Rare classes effectively shrink the sample size for those specific coefficients, leading to higher uncertainty (Standard Error)
 
 ## Imbalance ratio IR {.smaller}
--  Location: $$IR = \frac{1794}{78} \approx23$$
+-  Location: $$IR = \frac{N_{majority}}{N_{minority}}=\frac{1794}{78} \approx23$$
 -  Bath: $$IR = {2891 \over 191} \approx 15$$
 -  Kitchen: $$ IR = {2951 \over 131} \approx 23 $$
 -  Heating: $$IR = {2761 \over 321} \approx 9 $$
@@ -464,7 +467,7 @@ dist_counts[14:25]
 
 ## Checking sample size per new `district_main`
 
-```{r, warning=FALSE, fig.height=3.7}
+```{r, warning=FALSE, fig.height=3.7, fig.align='center'}
 # Barplot of observations per aggregated district
 ggplot(rent99, aes(x = district_main)) +
   geom_bar(fill = "steelblue", color = "white") +
@@ -487,7 +490,7 @@ Every new district has a good number of observation, ranging from 25 to 280
 
 ## Categorical Predictors: Price Drivers {.smaller}
 
-```{r categorical_boxplots, warning=FALSE, message=FALSE, echo=FALSE, fig.width=6.5, fig.height=3.5}
+```{r categorical_boxplots, warning=FALSE, message=FALSE, echo=FALSE, fig.width=6.5, fig.height=3.5, fig.align='center'}
 # Setup 1x4 grid
 par(mfrow = c(1, 4)) 
 
@@ -533,8 +536,8 @@ par(mfrow = c(1, 1))
 
 
 ## Boxplot of `rent` by `district_main` {.smaller}
-```{r, warning=FALSE, fig.height=3.8}
-# Boxplot of log_rent by aggregated district, ordered by median price
+```{r, warning=FALSE, fig.height=3.8, fig.align='center'}
+# Boxplot of rent by aggregated district, ordered by median price
 ggplot(rent99, aes(x = reorder(district_main, rent, FUN = median), y = rent)) +
   
   # Boxplot
@@ -589,7 +592,7 @@ corrplot(cor_matrix, method = "color",
 
 ## Area vs yearc {.smaller}
 
-```{r area_vs_yearc_scatter, warning=FALSE, message=FALSE, echo=FALSE, fig.width=5, fig.height=3}
+```{r area_vs_yearc_scatter, warning=FALSE, message=FALSE, echo=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 library(ggplot2)
 ggplot(rent99, aes(x = yearc, y = area)) +
   # Points with transparency
@@ -797,6 +800,7 @@ summary(model_gamma)
 
 model_gamma$sp
 ```
+
 ## Gamma Model Diagnostics
 
 ```{r, echo=TRUE}
@@ -804,6 +808,10 @@ par(mfrow=c(2,2))
 gam.check(model_gamma)
 ```
 
+The diagnostic plots confirm a strong model fit:
+
+- **Q-Q plot** shows *no significant deviation* from the theoretical quantiles.
+- **Residuals** scatter is *uniform and centered* around zero, *without patterns*.
 
 ## Model Comparison: AIC
 
@@ -827,5 +835,5 @@ print(results)
 $\implies$ **`model_gamma` offers the best trade-off between complexity and fit while respecting the physical and economic nature of the data.**
 
 
-# Thank you for your attention
+# Thank you for your attention {.smaller}
 
