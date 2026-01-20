@@ -381,7 +381,7 @@ par(mfrow = c(1, 1))
 
 ### Categorical Predictors: Imbalance Warning!
 
-An examination of the categorical predictors reveals a consistent **distributional imbalance**. The dataset reflects the natural composition of the housing market, where "standard" features are abundant and "premium" attributes are rare.
+An examination of the categorical predictors reveals a **distributional imbalance**. The dataset reflects the natural composition of the housing market, where "standard" features are abundant and "premium" attributes are rare.
 
 -   **Scarcity:** High-end categories such as "Top" location and premium amenities (Kitchen/Bath) represent a small fraction of the data ($<6\%$).
 

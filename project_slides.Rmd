@@ -132,7 +132,7 @@ We filter out this feature to ensure valid, non-circular results.
 rent99 <- subset(rent99, select = -rentsqm)
 ```
 
-# UNIVARIATE ANALYSIS | Numerical Variables
+# NUMERICAL VARIABLES | Univariate Analysis 
 
 ## Target Variable: `rent`
 
@@ -282,7 +282,7 @@ ggplot(rent99, aes(x = area)) +
 -   **Peaks**: Strong activity in the 1920s and 1960s
 -   **Gap**: Clear construction void during WWII (\~1940s)
 
-# BIVARIATE ANALYSIS | Numeric Variables
+# NUMERICAL VARIABLES | Bivariate Analysis
 
 ## Rent vs. numerical variables
 
@@ -336,8 +336,8 @@ ggplot(rent99, aes(x = area, y = rent)) +
 RENT vs AREA
 
 - **Linearity**: The linear fit (Red) overlaps almost perfectly with the flexible smooth line (Blue)
-- **Homoscedasticity**: The spread of residuals is relatively constant across the size range
-- **Decision**: `area` can be modeled as a linear parametric term
+- **Heteroscedasticity**: The spread of residuals is not constant across the size range
+- **Suggestion**: `area` could be modeled as a linear parametric term
 
 RENT vs YEARC
 
@@ -346,7 +346,7 @@ RENT vs YEARC
 -   **Spread**: High variance; age alone predicts poorly
 
 
-# UNIVARIATE ANALYSIS | Categorical Variables
+# CATEGORICAL VARIABLES | Univariate Analysis
 
 
 ## Categorical Variables
@@ -415,7 +415,7 @@ par(mfrow = c(1, 1))
 
 ## Categorical Predictors: Imbalance Warning!
 
--   **Uneven Distribution**: Significant imbalance observed across all categorical variables.
+-   **Uneven Distribution**: Possible significant imbalance observed across all categorical variables.
 -   **Location**: "Top" location (Cat 3) is rare ($N=78$ vs. $1,794$ for Average).
 -   **Amenities**: Premium Kitchens and Baths represent \<6% of the data.
 -   **Impact**: Rare classes effectively shrink the sample size for those specific coefficients, leading to higher uncertainty (Standard Error)
@@ -486,7 +486,7 @@ ggplot(rent99, aes(x = district_main)) +
 Every new district has a good number of observation, ranging from 25 to 280
 
 
-# BIVARIATE ANALYSIS | Categorical Variables
+# CATEGORICAL VARIABLES | Bivariate Analysis
 
 ## Categorical Predictors: Price Drivers {.smaller}
 
@@ -558,7 +558,7 @@ ggplot(rent99, aes(x = reorder(district_main, rent, FUN = median), y = rent)) +
 
 - **Validation**: The sorted plot validates the aggregation strategy, revealing a clear price hierarchy from affordable to premium zones.
 
-- **Modeling**: Significant median variation confirms predictive power, while consistent spreads indicate stable variance for the regression.
+- **Modeling**: Significant median variation could confirm predictive power, while consistent spreads indicate stable variance for the regression.
 
 
 ## Correlation Analysis | Numeric Predictors
@@ -625,6 +625,10 @@ ggplot(rent99, aes(x = yearc, y = area)) +
 - **Modeling Implication**: Consider potential interaction or non-linear terms when including both variables in the model
 
 
+# MODELING
+
+
+
 ## Why this specific dataset requires a GAM
 - **Non-Linear Relationships**
   - EDA revealed U-shaped trends (e.g., yearc) that linear models cannot capture.
@@ -689,7 +693,9 @@ $\implies$ model these variables with *smoothing functions* in the next steps.
 ## GAM with Smoothing Functions {.smaller}
 
 ```{r gam_model_simple, echo=TRUE}
-model2 <- gam(rent ~ s(area) + s(yearc) + location + kitchen + cheating + bath, family = gaussian(), data = rent99)
+model2 <- gam(rent ~ s(area) + s(yearc) + location + 
+                kitchen + cheating + bath, 
+              family = gaussian(), data = rent99)
 
 summary(model2)
 model2$sp
@@ -730,13 +736,15 @@ par(mfrow = c(1, 1))
 ```
 
 - The residual plots show **no clear patterns** for either `area` or `yearc`, indicating that the smoothing functions have effectively captured the non-linear relationships. 
-- The *residuals are randomly scattered around zero*, suggesting that the model is well-specified for these predictors.
+- The *residuals are randomly scattered around zero*, but in the first graph we can see the "cone" shape, suggesting for heteroscedasticity.
 
 
 ## GAM without `bath` {.smaller}
 
 ```{r gam_model_final, echo=TRUE}
-model3 <- gam(rent ~ s(yearc) + s(area) + location + kitchen + cheating, family = gaussian(), data = rent99)
+model3 <- gam(rent ~ s(yearc) + s(area) + location + 
+                kitchen + cheating, 
+              family = gaussian(), data = rent99)
 
 summary(model3)
 ```
@@ -811,7 +819,7 @@ gam.check(model_gamma)
 The diagnostic plots confirm a strong model fit:
 
 - **Q-Q plot** shows *no significant deviation* from the theoretical quantiles.
-- **Residuals** scatter is *uniform and centered* around zero, *without patterns*.
+- **Residuals** scatter is *uniform and centered* around zero, *without patterns*, and we can see homoscedasticity.
 
 ## Model Comparison: AIC
 
