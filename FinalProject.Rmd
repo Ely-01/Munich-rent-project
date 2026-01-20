@@ -638,6 +638,20 @@ model1 <- gam(rent ~ area + yearc + location +
               family = gaussian(), data = rent99)
 summary(model1)
 ```
+The model explains approximately 49.9% of the deviance in rent prices ($R^2_{adj} = 0.494$), suggesting a moderate fit to the data.
+
+The following variables are highly significant ($p < 0.001$) and have a strong positive impact on rent:
+- `Area`: As expected, larger apartments cost more. For every additional unit of area, rent increases by approximately 4.97 units, holding all else constant.
+- Year of Construction (`yearc`): Newer buildings command higher prices. Each additional year adds about 1.99 units to the rent.
+- Amenities: Better amenities significantly boost value:
+    - Central Heating (`cheating1`): Increases rent by ~117 units.
+    - Upgraded Kitchen (`kitchen1`): Increases rent by ~100 units.
+    - Better Bathroom (`bath1`): Increases rent by ~59 units.
+    - Location Quality: Compared to the baseline location (Location 1), being in Location 2 adds ~41 units, while the premium Location 3 adds ~125 units.
+    
+We included `district_main` as a categorical factor to see if specific administrative districts influence price beyond the general "Location" quality. The vast majority of the district coefficients (e.g., district_main10, district_main11, etc.) have high p-values (well above 0.05) and only a few specific districts (like district 2 and 15) show statistical significance. 
+The rest are statistically indistinguishable from the baseline district. This suggests that once we account for the broader location quality variable, the specific administrative district adds very little explanatory power.
+
 
 #### Baseline Model Diagnostics
 
@@ -669,6 +683,8 @@ lines(lowess(rent99$yearc, residuals(model1)), col = "blue", lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
+Diagnostic plots reveal systematic patterns in the residuals for both `area` and `yearc`, suggesting that a strict linear assumption is insufficient for these variables. This indicates non-linear relationships with rent prices. Consequently, in the next iteration, we will model these predictors using non-parametric smoothing functions to better capture their underlying curvature.
+
 ### GAM with Smoothing Functions
 
 ```{r}
@@ -677,6 +693,8 @@ model2 <- gam(rent ~ s(area) + s(yearc) + location + kitchen + cheating + bath, 
 summary(model2)
 model2$sp
 ```
+By incorporating smoothing functions for `area` and `yearc`, the model’s performance has noticeably improved, now explaining 51.5% of the deviance with an adjusted $R^2$ of 0.512. Both smooth terms are highly significant ($p < 2 \times 10^{-16}$), decisively confirming that the relationship between these variables and rent is non-linear and that the previous linear assumption was insufficient. The effective degrees of freedom (EDF) further highlight the complexity of these associations: area exhibits a highly complex non-linear pattern with an EDF of 7.63, which corresponds to its very low smoothing parameter ($\approx 0.06$) that allows the curve significant flexibility to fit the data. Similarly, `yearc` displays a distinct curved relationship with an EDF of 4.97, validating that while construction year is slightly less volatile than `area`, it still requires a flexible non-parametric approach to be modeled correctly.
+
 
 #### Model 2 Diagnostics 
 
@@ -707,8 +725,12 @@ lines(lowess(rent99$yearc, residuals(model2)), col = "blue", lwd = 2)
 # Reset plotting area
 par(mfrow = c(1, 1))
 ```
+The diagnostic plots for model2 confirm that while the smoothing functions have successfully corrected the systematic bias—evidenced by the blue Loess trend lines remaining flat and centered on zero for both area and yearc—a new issue regarding the error variance has emerged. Specifically, the residuals for area display a clear "funnel" pattern (heteroscedasticity), where the spread of errors widens significantly as the size of the apartment increases. This indicates that while the model effectively captures the average trend, it becomes increasingly imprecise for larger, more expensive properties, violating the Gaussian assumption of constant variance
+
 
 ### GAM without `bath`
+
+Testing the model without the `bath` variable was a necessary check to see if we could make our model simpler. In real estate, high-quality features often go together—an apartment with a nice kitchen usually has a nice bathroom too—so we suspected the model might be repeating information it already knew. By removing the variable, we tested if the other factors (like the kitchen or year of construction) were enough to predict the price on their own. 
 
 ```{r}
 model3 <- gam(rent ~ s(yearc) + s(area) + location + kitchen + cheating, family = gaussian(), data = rent99)
@@ -716,9 +738,15 @@ model3 <- gam(rent ~ s(yearc) + s(area) + location + kitchen + cheating, family 
 summary(model3)
 ```
 
+
 #### Comparing Model 2 vs Model 3 
 
+A comparison between Model 2 (which includes bath) and Model 3 (which excludes it) confirms that bathroom quality is a critical predictor of rent that should not be removed. The bath variable is highly significant ($p \approx 2.07 \times 10^{-6}$), and its inclusion improves every key performance metric. Model 2 achieves a notably lower AIC (39,080) compared to Model 3 (39,101)—a difference of over 20 points that provides strong evidence in favor of the more complex model. Furthermore, Model 2 demonstrates better predictive power with a lower GCV score (18,801 vs. 18,927) and a higher Adjusted $R^2$ (0.512 vs. 0.508). Consequently, removing bath degrades the model's fit, leading to the conclusion that it must be retained.
+
+
 ### Gaussian Model with Log Link
+
+By switching to a Log Link function while maintaining the Gaussian family, we successfully addressed the right-skewness of the rent data without needing to transform the target variable itself. This adjustment ensures that all predicted rent values are positive—a physical necessity for price data—while preserving the interpretability of the original scale.
 
 ```{r}
 model_gauss <- gam(
@@ -728,6 +756,10 @@ model_gauss <- gam(
 )
 summary(model_gauss)
 ```
+The results indicate a clear improvement over the previous identity-link model:
+- **Improved Fit**: The Adjusted $R^2$ increased to 0.529 (up from 0.512), and the Deviance Explained rose to 53.1%.
+- **Reduced Error**: The GCV score dropped to 18,135 (from 18,801), signaling a tighter fit to the data.
+- **Significance**: All parametric coefficients and smooth terms remain highly significant ($p < 0.001$). Notably, the smooth term for area retains a high degree of complexity (EDF $\approx$ 6.8), confirming that the non-linear relationship persists even under the log-link specification.
 
 #### Gaussian Model Diagnostics
 
@@ -736,7 +768,12 @@ par(mfrow=c(2,2))
 gam.check(model_gauss)
 ```
 
+While the model largely satisfies the assumption of normality—evidenced by the Q-Q plot and histogram, which show an approximate normal distribution with only minor deviations in the tails—it clearly fails the test for homoscedasticity. The plot of residuals against predicted values reveals a distinct "cone" where the spread of errors expands significantly as the predicted rent increases. 
+This confirms that the variance is not constant but scales with the mean. Since this heteroscedasticity is a critical violation of the Gaussian assumptions, it suggests that the model structure needs to change to explicitly handle this variance pattern (e.g., by switching to a Gamma distribution).
+
 ### Gamma Model
+
+While the Gaussian model with a log link provides a reasonable approximation, the Gamma family offers a theoretically superior framework for this data. Unlike the Gaussian assumption, the Gamma distribution is explicitly defined for strictly positive, right-skewed variables. Crucially, it inherently handles heteroscedasticity by assuming that the variance increases proportionally with the mean. This aligns perfectly with economic reality: as rent prices rise, the variability in those prices naturally expands.
 
 ```{r}
 model_gamma <- gam(
@@ -748,6 +785,11 @@ summary(model_gamma)
 
 model_gamma$sp
 ```
+The Gamma model coefficients are interpreted as percentage changes derived via the transformation $(e^{\beta} - 1) \times 100$. 
+Applying this to the most influential amenity, central heating (`cheating1`), the estimated coefficient of 0.3315 translates to a substantial premium of 39.3% ($e^{0.3315} - 1 \approx 0.393$). Location quality plays a similarly crucial role; properties in the top-tier "Location 3" cost 23.7% more than the baseline ($e^{0.213} - 1$), while the mid-tier "Location 2" adds a 10.3% increase. 
+
+Interior quality further differentiates price, with an upgraded kitchen adding roughly 13.8% ($e^{0.129} - 1$) and a superior bathroom contributing a smaller but significant 7.1% ($e^{0.069} - 1$). 
+Both `area` and `construction` year remain highly significant non-linear predictors ($p < 2e-16$), with the model explaining 52.8% of the total variance while effectively capturing the heteroscedasticity inherent in the data.
 
 #### Gamma Model Diagnostics
 
@@ -755,6 +797,8 @@ model_gamma$sp
 par(mfrow=c(2,2))
 gam.check(model_gamma)
 ```
+
+The Q-Q plot displays no significant deviation from the theoretical quantiles, indicating that the distributional assumptions are fully satisfied. Crucially, the residual scatter is now uniform and centered around zero, devoid of any systematic patterns; this demonstrates that the model has successfully resolved the heteroscedasticity issues observed in earlier iterations, ensuring that the variance is now correctly modeled across all rent levels.
 
 ### Model Comparison: AIC
 
@@ -768,3 +812,4 @@ results$Dev_Expl <- c(summary(model1)$dev.expl, summary(model2)$dev.expl, summar
                       summary(model_gauss)$dev.expl, summary(model_gamma)$dev.expl)
 print(results)
 ```
+The Gamma model (`model_gamma`) is clearly the best choice. It has the lowest AIC and BIC scores, which proves it fits the data the most efficiently. Even though the Gaussian model explains a tiny bit more of the variation (53.1% vs 51.2%), the Gamma model is superior because it matches how rent prices actually behave in the real world—specifically, it handles the fact that expensive apartments vary more in price. Therefore, we choose the Gamma model because it offers the best balance between mathematical accuracy and economic reality.
