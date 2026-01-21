@@ -1,5 +1,6 @@
 ---
 title: "Statistical Methods"
+subtitle: "Final Project - Group J"
 author: "Dariol Emma, Imbalzano Elisabeth, Pasieka Weronika, Severi Matteo"
 date: "`r Sys.Date()`"
 output: html_document
@@ -453,7 +454,7 @@ par(mfrow = c(1, 4))
 boxplot(rent ~ location, data = rent99, 
         main = "Location", 
         col = c("#A6CEE3", "#1F78B4", "#B2DF8A"),
-        ylab = "log(rent)", xlab = "")
+        ylab = "rent", xlab = "")
 grid()
 
 # Heating
@@ -652,7 +653,7 @@ summary(model2)
 model2$sp
 ```
 
-By incorporating smoothing functions for `area` and `yearc`, the model’s performance has noticeably improved, now explaining 51.5% of the deviance with an adjusted $R^2$ of 0.512. Both smooth terms are highly significant ($p < 2 \times 10^{-16}$), decisively confirming that the relationship between these variables and rent is non-linear and that the previous linear assumption was insufficient. The effective degrees of freedom (EDF) further highlight the complexity of these associations: area exhibits a highly complex non-linear pattern with an EDF of 7.63, which corresponds to its very low smoothing parameter ($\approx 0.06$) that allows the curve significant flexibility to fit the data. Similarly, `yearc` displays a distinct curved relationship with an EDF of 4.97, validating that while construction year is slightly less volatile than `area`, it still requires a flexible non-parametric approach to be modeled correctly.
+By incorporating smoothing functions for `area` and `yearc`, the model’s performance has noticeably improved, now explaining 51.5% of the deviance with an adjusted $R^2$ of 0.512. Both smooth terms are highly significant ($p < 2 \times 10^{-16}$) so the variables are still important. The effective degrees of freedom (EDF) further highlight the complexity of these associations: area exhibits a highly complex non-linear pattern with an EDF of 7.63, which corresponds to its very low smoothing parameter ($\approx 0.06$) that allows the curve significant flexibility to fit the data. Similarly, `yearc` displays a distinct curved relationship with an EDF of 4.97, validating that while construction year is slightly less volatile than `area`, it still requires a flexible non-parametric approach to be modeled correctly.
 
 #### Model 2 Diagnostics
 
@@ -680,7 +681,32 @@ lines(lowess(rent99$yearc, residuals(model2)), col = "blue", lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
-The diagnostic plots for model2 confirm that while the smoothing functions have successfully corrected the systematic bias—evidenced by the blue Loess trend lines remaining flat and centered on zero for both `area` and `yearc` —a new issue regarding the error variance has emerged. Specifically, the residuals for area display a clear "funnel" pattern (heteroscedasticity), where the spread of errors widens significantly as the size of the apartment increases. This indicates that while the model effectively captures the average trend, it becomes increasingly imprecise for larger, more expensive properties, violating the Gaussian assumption of constant variance
+The diagnostic plots for model2 confirm that while the smoothing functions have successfully corrected the systematic bias—evidenced by the blue Loess trend lines remaining flat and centered on zero for both `area` and `yearc` —a new issue regarding the error variance has emerged. Specifically, the residuals for `area` display a clear "funnel" pattern (heteroscedasticity), where the spread of errors widens significantly as the size of the apartment increases. This indicates that while the model effectively captures the average trend, it becomes increasingly imprecise for larger, more expensive properties, violating the Gaussian assumption of constant variance
+
+```{r}
+# shift = intercept (baseline price)
+plot(model2, select = 1,      # 1 = s(area)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model2)[1], # Shift by the intercept
+     main = "Effect of Area on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Area (sqm)")
+```
+
+
+The partial dependence plot confirms a positive relationship between `size` and `rent`. For standard apartments (20–100 sqm), the trend is nearly linear, implying a constant price per square meter. However, the curve steepens for properties larger than 120 sqm, suggesting a 'luxury premium' where the marginal cost of additional space increases.
+
+
+```{r}
+# shift = intercept (baseline price)
+plot(model2, select = 2,      # 2 = s(yearc)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model2)[1], # Shift by the intercept
+     main = "Effect of Yearc on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Yearc")
+```
+The construction year effect reveals a non-linear trend. Rent prices remain relatively flat for buildings constructed between 1920 and 1960. However, a clear upward trend begins after 1960, indicating that modern apartments command significantly higher rents compared to older stock.
 
 ### GAM without `bath`
 
@@ -709,7 +735,11 @@ model_gauss <- gam(
 summary(model_gauss)
 ```
 
-The results indicate a clear improvement over the previous identity-link model: - **Improved Fit**: The Adjusted $R^2$ increased to 0.529 (up from 0.512), and the Deviance Explained rose to 53.1%. - **Reduced Error**: The GCV score dropped to 18,135 (from 18,801), signaling a tighter fit to the data. - **Significance**: All parametric coefficients and smooth terms remain highly significant ($p < 0.001$). Notably, the smooth term for area retains a high degree of complexity (EDF $\approx$ 6.8), confirming that the non-linear relationship persists even under the log-link specification.
+The results indicate a clear improvement over the previous identity-link model: 
+
+- **Improved Fit**: The Adjusted $R^2$ increased to 0.529 (up from 0.512), and the Deviance Explained rose to 53.1%. 
+- **Reduced Error**: The GCV score dropped to 18,135 (from 18,801), signaling a tighter fit to the data.
+- **Significance**: All parametric coefficients and smooth terms remain highly significant ($p < 0.001$). Notably, the smooth term for area retains a high degree of complexity (EDF $\approx$ 6.8), confirming that the non-linear relationship persists even under the log-link specification.
 
 #### Gaussian Model Diagnostics
 
@@ -726,7 +756,7 @@ While the Gaussian model with a log link provides a reasonable approximation, th
 
 ```{r}
 model_gamma <- gam(
-  rent ~ s(area) + s(yearc) + location + cheating + bath + kitchen,
+  rent ~ s(area) + s(yearc) + location + cheating + kitchen + bath,
   family = Gamma(link = "log"),
   data = rent99
 )
@@ -738,6 +768,32 @@ model_gamma$sp
 The Gamma model coefficients are interpreted as percentage changes derived via the transformation $(e^{\beta} - 1) \times 100$. Applying this to the most influential amenity, central heating (`cheating1`), the estimated coefficient of 0.3315 translates to a substantial premium of 39.3% ($e^{0.3315} - 1 \approx 0.393$). Location quality plays a similarly crucial role; properties in the top-tier "Location 3" cost 23.7% more than the baseline ($e^{0.213} - 1$), while the mid-tier "Location 2" adds a 10.3% increase.
 
 Interior quality further differentiates price, with an upgraded kitchen adding roughly 13.8% ($e^{0.129} - 1$) and a superior bathroom contributing a smaller but significant 7.1% ($e^{0.069} - 1$). Both `area` and `construction` year remain highly significant non-linear predictors ($p < 2e-16$), with the model explaining 52.8% of the total variance while effectively capturing the heteroscedasticity inherent in the data.
+
+
+```{r}
+# shift = intercept (baseline price)
+# trans = exp (convert log to euros)
+plot(model_gamma, select = 1,      # 1 = s(area)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model_gamma)[1], # Shift by the intercept
+     trans = exp,                  # Transform log -> Real Money
+     main = "Effect of Area on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Area (sqm)")
+```
+```{r}
+# shift = intercept (baseline price)
+# trans = exp (convert log to euros)
+plot(model_gamma, select = 2,      # 2 = s(yearc)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model_gamma)[1], # Shift by the intercept
+     trans = exp,                  # Transform log -> Real Money
+     main = "Effect of Yearc on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Yearc")
+```
+
+
 
 #### Gamma Model Diagnostics
 
@@ -762,3 +818,6 @@ print(results)
 ```
 
 The Gamma model (`model_gamma`) is clearly the best choice. It has the lowest AIC and BIC scores, which proves it fits the data the most efficiently. Even though the Gaussian model explains a tiny bit more of the variation (53.1% vs 51.2%), the Gamma model is superior because it matches how rent prices actually behave in the real world—specifically, it handles the fact that expensive apartments vary more in price. Therefore, we choose the Gamma model because it offers the best balance between mathematical accuracy and economic reality.
+
+**Limitations**: The model explains 51.2% of the variance, meaning nearly half of the factors driving rent prices are unobserved. To improve accuracy, future models would need data currently missing from this dataset, such as for example renovation status, energy efficiency ratings, or specific neighborhood quality.
+

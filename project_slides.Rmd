@@ -498,7 +498,7 @@ par(mfrow = c(1, 4))
 boxplot(rent ~ location, data = rent99, 
         main = "Location", 
         col = c("#A6CEE3", "#1F78B4", "#B2DF8A"),
-        ylab = "log(rent)", xlab = "")
+        ylab = "rent", xlab = "")
 grid()
 
 # 2. Heating
@@ -686,7 +686,7 @@ lines(lowess(rent99$yearc, residuals(model1)), col = "blue", lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
-We can see a **slight pattern** in the residuals for both `area` and `yearc`, indicating that the linear assumption may not be sufficient. 
+We can see a **slight pattern** in the residuals indicating that the linear assumption may not be sufficient.
 
 $\implies$ model these variables with *smoothing functions* in the next steps.
 
@@ -700,9 +700,9 @@ model2 <- gam(rent ~ s(area) + s(yearc) + location +
 summary(model2)
 model2$sp
 ```
-- `area` and `yearc` are **highly significant** ($p < 2e-16$), confirming that non-linear relationships are important for this model.
+- `s(area)` and `s(yearc)` are **highly significant** ($p < 2e-16$), confirming that those variables are still important for this model.
 - The *edf* for `area` is 7.63, which is substantially higher than 1 $\to$  highly non-linear and complex relationship between `area` and `rent`. 
-- `yearc` has an edf of 4.97, also confirming non-linearity, though slightly less complex than area. 
+- `yearc` has an edf of 4.97, also confirming non-linearity, though slightly less complex than area.
 - The low smoothing parameter for `area` ($\approx 0.06$) is consistent with this high edf, as it imposes very little penalty on the curve's complexity.
 
 ## Model 2 Diagnostics 
@@ -840,8 +840,10 @@ print(results)
 - The Gamma model achieves the **lowest AIC** (38,501) and **BIC** (38,614), indicating the best fit among all considered models. 
 - Although its deviance explained (51.2%) is **slightly lower** than the Gaussian log-link model (53.1%), the substantial drop in information criteria confirms that the Gamma distribution is statistically more appropriate for modeling rent data, effectively capturing its positive skewness and heteroscedasticity.
 
-$\implies$ **`model_gamma` offers the best trade-off between complexity and fit while respecting the physical and economic nature of the data.**
+$\implies$ **`model_gamma` offers a good trade-off between complexity and fit while respecting the physical and economic nature of the data.**
+
+**Limitations**: The model explains 51.2% of the variance, meaning nearly half of the factors driving rent prices are unobserved. To improve accuracy, future models would need data currently missing from this dataset, such as for example renovation status, energy efficiency ratings, or specific neighborhood quality.
 
 
-# Thank you for your attention {.smaller}
+# Thank you <br> for your attention
 
