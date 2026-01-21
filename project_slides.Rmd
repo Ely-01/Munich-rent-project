@@ -260,7 +260,7 @@ ggplot(rent99, aes(x = area)) +
 -   **Stable**: No extreme outliers
 -   **Range**: Covers 20–160 sqm; density concentrated at 51 sqm - 81 sqm (1st Qu - 3rd Qu)
 
-## Quantitative predictor `yearc`
+## Quantitative Predictors: `yearc`
 
 ```{r yearc_histogram, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
     library(ggplot2)
