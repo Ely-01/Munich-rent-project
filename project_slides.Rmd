@@ -8,7 +8,7 @@ output:
     theme: Rochester
     colortheme: beaver
   slidy_presentation: default
-subtitle: 'Final Project: Rent Modelling in Munich'
+subtitle: 'Final Project - Group J: Rent Modelling in Munich'
 ---
 
 <style>
