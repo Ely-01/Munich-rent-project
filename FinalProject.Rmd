@@ -773,7 +773,7 @@ Interior quality further differentiates price, with an upgraded kitchen adding r
 # trans = exp (convert log to euros)
 plot(model_gamma, select = 1,      # 1 = s(area)
      shade = TRUE,                 # Add confidence intervals
-     #shift = coef(model_gamma)[1], # Shift by the intercept
+     shift = coef(model_gamma)[1], # Shift by the intercept
      trans = exp,                  # Transform log -> Real Money
      main = "Effect of Area on Rent (in Euros)",
      ylab = "Predicted Rent Contribution (€)",
@@ -784,7 +784,7 @@ plot(model_gamma, select = 1,      # 1 = s(area)
 # trans = exp (convert log to euros)
 plot(model_gamma, select = 2,      # 2 = s(yearc)
      shade = TRUE,                 # Add confidence intervals
-     #shift = coef(model_gamma)[1], # Shift by the intercept
+     shift = coef(model_gamma)[1], # Shift by the intercept
      trans = exp,                  # Transform log -> Real Money
      main = "Effect of Yearc on Rent (in Euros)",
      ylab = "Predicted Rent Contribution (€)",
