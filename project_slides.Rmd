@@ -738,6 +738,34 @@ par(mfrow = c(1, 1))
 - The residual plots show **no clear patterns** for either `area` or `yearc`, indicating that the smoothing functions have effectively captured the non-linear relationships. 
 - The *residuals are randomly scattered around zero*, but in the first graph we can see the "cone" shape, suggesting for heteroscedasticity.
 
+## Visual interpretation of the spline effect
+
+```{r}
+par(mfrow = c(1, 2))
+
+# shift = intercept (baseline price)
+plot(model2, select = 1,      # 1 = s(area)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model2)[1], # Shift by the intercept
+     main = "Effect of Area on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Area (sqm)")
+
+# shift = intercept (baseline price)
+plot(model2, select = 2,      # 2 = s(yearc)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model2)[1], # Shift by the intercept
+     main = "Effect of Yearc on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Yearc")
+
+par(mfrow = c(1, 1))
+```
+
+
+- Rent increases linearly with size for standard apartments (20–100 sqm). Above 120 sqm, the **curve steepens**, indicating a 'luxury premium' where the cost of extra space rises
+- Rent is stable for buildings constructed before 1960. After 1960, prices rise steadily, showing a clear premium for modern construction.
+
 
 ## GAM without `bath` {.smaller}
 
@@ -808,6 +836,35 @@ summary(model_gamma)
 
 model_gamma$sp
 ```
+## Visual interpretation of the spline effect on Gamma model
+
+```{r}
+par(mfrow = c(1, 2))
+
+# shift = intercept (baseline price)
+# trans = exp (convert log to euros)
+plot(model_gamma, select = 1,      # 1 = s(area)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model_gamma)[1], # Shift by the intercept
+     trans = exp,                  # Transform log -> Real Money
+     main = "Effect of Area on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Area (sqm)")
+
+# shift = intercept (baseline price)
+# trans = exp (convert log to euros)
+plot(model_gamma, select = 2,      # 2 = s(yearc)
+     shade = TRUE,                 # Add confidence intervals
+     shift = coef(model_gamma)[1], # Shift by the intercept
+     trans = exp,                  # Transform log -> Real Money
+     main = "Effect of Yearc on Rent (in Euros)",
+     ylab = "Predicted Rent Contribution (€)",
+     xlab = "Yearc")
+
+par(mfrow = c(1, 1))
+```
+
+
 
 ## Gamma Model Diagnostics
 
@@ -821,9 +878,9 @@ The diagnostic plots confirm a strong model fit:
 - **Q-Q plot** shows *no significant deviation* from the theoretical quantiles.
 - **Residuals** scatter is *uniform and centered* around zero, *without patterns*, and we can see homoscedasticity.
 
+
+
 ## Model Comparison: AIC
-
-
 
 ```{r, echo=FALSE}
 
@@ -840,9 +897,15 @@ print(results)
 - The Gamma model achieves the **lowest AIC** (38,501) and **BIC** (38,614), indicating the best fit among all considered models. 
 - Although its deviance explained (51.2%) is **slightly lower** than the Gaussian log-link model (53.1%), the substantial drop in information criteria confirms that the Gamma distribution is statistically more appropriate for modeling rent data, effectively capturing its positive skewness and heteroscedasticity.
 
+
+## Conclusions
 $\implies$ **`model_gamma` offers a good trade-off between complexity and fit while respecting the physical and economic nature of the data.**
 
-**Limitations**: The model explains 51.2% of the variance, meaning nearly half of the factors driving rent prices are unobserved. To improve accuracy, future models would need data currently missing from this dataset, such as for example renovation status, energy efficiency ratings, or specific neighborhood quality.
+**Limitations**: 
+
+- The model explains 51.2% of the variance, meaning nearly half of the factors driving rent prices are unobserved. 
+
+- To improve accuracy, future models would need data currently missing from this dataset, such as for example renovation status, energy efficiency ratings, or specific neighborhood quality.
 
 
 # Thank you <br> for your attention
