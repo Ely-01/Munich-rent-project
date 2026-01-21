@@ -817,7 +817,9 @@ results$Dev_Expl <- c(summary(model1)$dev.expl, summary(model2)$dev.expl, summar
 print(results)
 ```
 
-The Gamma model (`model_gamma`) is clearly the best choice. It has the lowest AIC and BIC scores, which proves it fits the data the most efficiently. Even though the Gaussian model explains a tiny bit more of the variation (53.1% vs 51.2%), the Gamma model is superior because it matches how rent prices actually behave in the real world—specifically, it handles the fact that expensive apartments vary more in price. Therefore, we choose the Gamma model because it offers the best balance between mathematical accuracy and economic reality.
+### Conclusion
+
+The Gamma model (`model_gamma`) is clearly the best choice. It has the lowest AIC and BIC scores, which proves it fits the data the most efficiently. Even though the Gaussian model explains a tiny bit more of the deviance (53.1% vs 51.2%), the Gamma model is superior because it matches how rent prices actually behave in the real world—specifically, it handles the fact that expensive apartments vary more in price. Therefore, we choose the Gamma model because it offers the best balance between mathematical accuracy and economic reality.
 
 **Limitations**: The model explains 51.2% of the variance, meaning nearly half of the factors driving rent prices are unobserved. To improve accuracy, future models would need data currently missing from this dataset, such as for example renovation status, energy efficiency ratings, or specific neighborhood quality.
 
